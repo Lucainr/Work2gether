@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.room.dao.RoomMapper">
+
+<select id="selectRoomList" resultType="kr.or.ddit.room.vo.RoomVO">
+	SELECT ROOM_ID
+			,ROOM_HOSU
+			,ROOM_NAME
+			,ROOM_NUM
+			,ROOM_IMG
+			,ROOM_DETAIL
+			,ROOM_YN
+	FROM ROOM
+
+</select>
+
+<select id="selectRoom" resultType="kr.or.ddit.room.vo.RoomVO">
+	SELECT ROOM_ID
+			,ROOM_HOSU
+			,ROOM_NAME
+			,ROOM_NUM
+			,ROOM_IMG
+			,ROOM_DETAIL
+			,ROOM_YN
+	FROM ROOM
+	WHERE ROOM_ID =  #{roomId}
+</select>
+
+<insert id="insertRoom">
+	INSERT INTO ROOM(
+			ROOM_HOSU
+			,ROOM_NAME
+			,ROOM_NUM
+			,ROOM_IMG
+			,ROOM_DETAIL
+			,ROOM_YN
+	)
+	VALUES(
+		  #{roomHosu,jdbcType=VARCHAR}
+		, #{roomName,jdbcType=VARCHAR}
+		, #{roomNum,jdbcType=NUMERIC}
+		, #{roomImg,jdbcType=BLOB}
+		, #{roomDetail,jdbcType=VARCHAR}
+		, #{roomYn,jdbcType=VARCHAR}	
+	)		
+</insert>
+
+<update id="updateRoom" >
+	UPDATE ROOM 
+	SET 
+		 ROOM_HOSU=#{roomHosu,jdbcType=VARCHAR}
+		,ROOM_NAME=#{roomName,jdbcType=VARCHAR}
+		,ROOM_NUM=#{roomNum,jdbcType=NUMERIC}
+		,ROOM_IMG=#{roomImg,jdbcType=BLOB}
+		,ROOM_DETAIL=#{roomDetail,jdbcType=VARCHAR}
+		,ROOM_YN=#{roomYn,jdbcType=VARCHAR}
+		
+	WHERE ROOM_ID = #{roomId}
+
+
+</update>
+
+<delete id="deleteRoom">
+	DELETE FROM ROOM 
+	WHERE ROOM_ID = #{roomId}
+</delete>
+
+<update id="deleteRoomImage">
+		UPDATE ROOM
+		SET ROOM_IMG=null
+		WHERE ROOM_ID=#{roomId}
+	</update>
+
+
+</mapper>

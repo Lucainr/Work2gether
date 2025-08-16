@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.vacation.dao.VacationHistoryMapper">
+	<resultMap id="vacationHistoryMap" type="VacationHistoryVO" autoMapping="true">
+		
+	</resultMap>
+	
+	<sql id="searchListFrag">
+		<where>
+			<if test="variousCondition.empId != null">
+				EMP_ID = #{variousCondition.empId}
+			</if>
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.startDate)">
+            	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.endDate)">
+                AND (
+                    (VACATION_HISTORY.VAC_STARTDATE BETWEEN #{variousCondition.startDate} AND #{variousCondition.endDate})
+                    OR
+                    (VACATION_HISTORY.VAC_ENDDATE BETWEEN #{variousCondition.startDate} AND #{variousCondition.endDate})
+                )
+            	</if>
+        	</if>
+		</where>
+	</sql>
+
+
+
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM VACATION_HISTORY
+		<include refid="searchListFrag" />
+	</select>
+	
+	<select id="selectVacationHistoryList" resultMap="vacationHistoryMap">
+		SELECT B.*
+		FROM 
+		(
+			SELECT ROWNUM RNUM, A.*
+			FROM 
+			(
+				SELECT 
+				    VACATION_HISTORY.VAC_NO,
+				    VACATION_HISTORY.EMP_ID,
+				    VACATION_HISTORY.VAC_CODE, COMMON_CODE.CODE_COMMENT AS VAC_NAME,
+				    VACATION_HISTORY.VAC_STARTDATE,
+				    VACATION_HISTORY.VAC_ENDDATE,
+				    VACATION_HISTORY.VAC_REASON,
+				    VACATION_HISTORY.VAC_ELECNO
+				    
+				FROM 
+				    VACATION_HISTORY
+				LEFT JOIN COMMON_CODE
+				    ON VACATION_HISTORY.VAC_CODE = COMMON_CODE.CODE
+				    AND COMMON_CODE.TABLE_NAME = 'VACATION'
+				    AND COMMON_CODE.CODE_TYPE = '휴가종류'
+				<include refid="searchListFrag"/>
+				ORDER BY VACATION_HISTORY.VAC_STARTDATE DESC 
+				
+			) A
+		) B
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	
+	
+	<select id="selectTRecord" resultType="int">
+		SELECT COUNT(*)
+		  FROM VACATION_HISTORY V
+		  INNER JOIN EMPLOYEE E ON V.EMP_ID = E.EMP_ID
+		<where>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.searchWord)">
+			   	AND INSTR(E.EMP_NAME , #{variousCondition.searchWord}) > 0
+		 </if>
+		 <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.startDate)">
+            <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.endDate)">
+                AND (
+                    (V.VAC_STARTDATE BETWEEN #{variousCondition.startDate} AND #{variousCondition.endDate})
+                    OR
+                    (V.VAC_ENDDATE BETWEEN #{variousCondition.startDate} AND #{variousCondition.endDate})
+                )
+            </if>
+        </if>
+        </where>
+	</select>
+	
+	<select id="selectAllVacationHistoryList" resultMap="vacationHistoryMap">
+	SELECT B.*
+		FROM 
+		(
+			SELECT ROWNUM RNUM, A.*
+			FROM 
+			(
+				SELECT 
+				     V.VAC_NO 
+				   , E.EMP_ID
+				   , E.EMP_NAME 
+				   , ( 
+				     SELECT CODE_COMMENT
+				       FROM COMMON_CODE 
+				      WHERE 1=1
+				        AND TABLE_NAME='VACATION'
+				        AND CODE_TYPE ='휴가종류'
+				        AND CODE = V.VAC_CODE ) AS VAC_CODE
+				   , V.VAC_STARTDATE
+				   , V.VAC_ENDDATE
+				   , V.VAC_REASON
+				   , V.VAC_ELECNO
+				   , D.DEPART_CODE
+				   , D.DEPART_NAME
+				   , (
+				     SELECT CODE_COMMENT 
+				       FROM COMMON_CODE 
+				      WHERE 1=1
+				        AND TABLE_NAME = 'EMPLOYEE'
+				        AND CODE_TYPE = '직급'
+				        AND CODE = E.POSI_ID
+				   ) AS POSI_NAME 
+				FROM VACATION_HISTORY V 
+				     INNER JOIN EMPLOYEE E ON V.EMP_ID = E.EMP_ID
+				     INNER JOIN DEPARTMENT D ON D.DEPART_CODE = E.DEPART_CODE 
+			   <where>
+			   <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.searchWord)">
+			   	AND INSTR(E.EMP_NAME , #{variousCondition.searchWord}) > 0
+			   </if> 
+			   	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.startDate)">
+            		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.endDate)">
+                AND (
+                    (V.VAC_STARTDATE BETWEEN #{variousCondition.startDate} AND #{variousCondition.endDate})
+                    OR
+                    (V.VAC_ENDDATE BETWEEN #{variousCondition.startDate} AND #{variousCondition.endDate})
+                )
+            		</if>
+        	   </if>
+        	   </where>
+				ORDER BY V.VAC_STARTDATE DESC 
+				
+			) A
+		) B
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	
+</mapper>

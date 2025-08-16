@@ -1,0 +1,33 @@
+package kr.or.ddit.attendance.service;
+
+import java.util.List;
+
+import kr.or.ddit.attendance.vo.AttendanceHistoryVO;
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.commons.paging.PaginationInfo;
+
+public interface AttendanceHistoryService {
+	/**
+	 * 근태 추가(출근시)
+	 * @return 성공 OK, 실패 FAIL
+	 */
+	public ServiceResult createAttendanceHistory(AttendanceHistoryVO attendance);
+	
+	/**
+	 * 근태 수정(퇴근시)
+	 * @return 성공 OK, 실패 FAIL
+	 */
+	public ServiceResult modifyAttendanceHistory(AttendanceHistoryVO attendance);
+	/**
+	 * 근태 삭제
+	 * @return 성공 OK, 실패 FAIL
+	 */
+	public ServiceResult deleteAttendanceHistory(String atthisId);
+
+	/**
+	 * 관리자 / 직원 기능 : 직원 한 명의 근태 기록 전체 출력(나의 근태 기록 전체출력)
+	 * @param paging
+	 * @return 없으면 빈 list
+	 */
+	public List<AttendanceHistoryVO> readAttendanceHistoryList(PaginationInfo paging);
+}

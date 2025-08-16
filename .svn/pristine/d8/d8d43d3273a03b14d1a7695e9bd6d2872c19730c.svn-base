@@ -1,0 +1,25 @@
+package kr.or.ddit.survey.vo;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+
+import kr.or.ddit.commons.validate.InsertGroup;
+import kr.or.ddit.commons.validate.UpdateGroup;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+
+@Data
+@ToString
+@EqualsAndHashCode(of = {"suritemNo", "surquesNo", "sboardNo"})
+@NoArgsConstructor
+public class SurveyItemVO {
+	private Integer suritemNo;
+	private Integer surquesNo;
+	private String sboardNo;
+	@NotBlank(groups = {InsertGroup.class, UpdateGroup.class})
+	@Size(max = 2000, message = "입력 값은 최대 2000자까지 가능합니다.")
+	private String suritemContent;
+	private Integer suritemIndex;
+}

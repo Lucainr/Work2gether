@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.schedule.dao.ScheduleMapper">
+
+	<resultMap type="ScheduleVO" id="scheduleList"
+		autoMapping="true">
+		<association property="comCode" javaType="CommonCodeVO"
+			autoMapping="true" />
+		<association property="employee" javaType="EmployeeVO"
+			autoMapping="true" />
+		<association property="depart" javaType="DepartmentVO"
+			autoMapping="true" />
+	</resultMap>
+
+
+
+
+	<select id="selectScheduleList" resultMap="scheduleList">
+
+		SELECT
+			S.SCHE_ID
+			,S.SCHE_TITLE
+			,S.SCHE_CONTENT
+			,S.SCHE_SDATE
+			,S.SCHE_EDATE
+			,S.SCHE_REGIDATE
+			,S.SCHE_LASTUP
+			,S.SCHETYPE_ID
+			,S.EMP_ID
+			,S.SCHE_BCOLOR
+			,S.SCHE_FCOLOR
+			,C.CODE
+			,C.CODE_COMMENT
+			,D.DEPART_CODE
+			,D.DEPART_NAME
+		FROM SCHEDULE S
+		INNER JOIN COMMON_CODE C
+			ON S.SCHETYPE_ID = C.CODE AND C.TABLE_NAME = 'SCHEDULE'
+		INNER JOIN EMPLOYEE E
+			ON S.EMP_ID = E.EMP_ID
+		INNER JOIN DEPARTMENT D
+			ON E.DEPART_CODE = D.DEPART_CODE
+		WHERE 1=1
+		<if test='schetypeId eq "1"'>
+			AND S.SCHETYPE_ID = #{schetypeId}
+		</if>
+		<if test='schetypeId eq "2"'>
+			AND S.SCHETYPE_ID = #{schetypeId}
+			AND E.DEPART_CODE = #{departCode}
+			AND S.EMP_ID = #{empId}
+		</if>
+		<if test='schetypeId eq "3"'>
+			AND S.SCHETYPE_ID = #{schetypeId}
+			AND S.EMP_ID = #{empId}
+		</if>
+
+		<!-- 전체 일정 -->
+		<if test='schetypeId eq null or schetypeId eq "" '>
+			AND (
+			(S.SCHETYPE_ID = '1')
+			OR (S.SCHETYPE_ID = '2' AND E.DEPART_CODE = #{departCode})
+			OR (S.SCHETYPE_ID = '3' AND S.EMP_ID = #{empId})
+			)
+		</if>
+
+
+	</select>
+	
+
+
+
+
+
+	<insert id="insertSchedule">
+		INSERT INTO SCHEDULE(
+		SCHE_TITLE
+		,SCHE_CONTENT
+		,SCHE_SDATE
+		,SCHE_EDATE
+		,SCHE_LASTUP
+		,SCHETYPE_ID
+		,EMP_ID
+		,SCHE_BCOLOR
+		,SCHE_FCOLOR
+		)VALUES(
+
+		#{scheTitle,jdbcType=VARCHAR}
+		, #{scheContent,jdbcType=VARCHAR}
+		,#{scheSdate,jdbcType=DATE}
+		,#{scheEdate,jdbcType=DATE}
+		,#{scheLastup,jdbcType=VARCHAR}
+		,#{schetypeId,jdbcType=VARCHAR}
+		, #{empId,jdbcType=VARCHAR}
+		,#{scheBcolor,jdbcType=VARCHAR}
+		,#{scheFcolor,jdbcType=VARCHAR}
+		)
+
+	</insert>
+
+	<update id="updateSchedule">
+		UPDATE SCHEDULE
+		SET
+		SCHE_TITLE=#{scheTitle,jdbcType=VARCHAR},
+		SCHE_CONTENT=#{scheContent,jdbcType=VARCHAR},
+		SCHE_SDATE=#{scheSdate,jdbcType=DATE},
+		SCHE_EDATE=#{scheEdate,jdbcType=DATE},
+		SCHE_REGIDATE = SYSDATE,
+		SCHE_LASTUP=#{scheLastup,jdbcType=VARCHAR},
+		SCHE_BCOLOR=#{scheBcolor,jdbcType=VARCHAR},
+		SCHE_FCOLOR=#{scheFcolor,jdbcType=VARCHAR}
+		WHERE SCHE_ID = #{scheId} <!-- AND SCHETYPE_ID = #{schetypeId} -->
+
+	</update>
+
+
+	<delete id="deleteSchedule">
+		DELETE FROM SCHEDULE
+		WHERE SCHE_ID = #{scheId}
+	</delete>
+
+</mapper>

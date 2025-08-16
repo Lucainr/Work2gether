@@ -1,0 +1,129 @@
+package kr.or.ddit.approval.service;
+
+
+import kr.or.ddit.approval.dao.*;
+import kr.or.ddit.approval.vo.ApprovalFormVO;
+import kr.or.ddit.employee.vo.EmployeeVO;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@Service
+public class ApprovalServiceImpl implements ApprovalService {
+
+    @Autowired
+    private ApprovalMapper approvalMapper;
+
+    @Autowired
+    private ApprovalDocumentMapper approvalDocumentMapper;
+
+    @Autowired
+    private ApprovalFormMapper approvalFormMapper;
+
+    @Autowired
+    private ApprovalLineMapper approvalLineMapper;
+
+    @Autowired
+    private ApproverMapper approverMapper;
+
+    @Override
+    public List<ApprovalFormVO> getApprovalFormTitles() {
+        return approvalFormMapper.selectFormTitles();
+    }
+
+    @Override
+    public String getFormContent(String apprformId) {
+        return approvalFormMapper.selectFormContent(apprformId);
+    }
+
+    //문서 조합하기 로직
+    @Override
+    public String processVacationForm(Map<String, String> approvalInfoMap,
+                                      Map<String, Object> requestData) {
+
+        String template = approvalInfoMap.get("templateContent");
+
+        // 여기서 \n 이스케이프 문자를 실제 줄바꿈 문자로 변환
+        template = template.replace("\\n", "\n");
+
+        // 날짜 문자열을 LocalDate로 변환
+        LocalDate startDate = LocalDate.parse((String) requestData.get("startDate"));
+        LocalDate endDate = LocalDate.parse((String) requestData.get("endDate"));
+
+        // 휴가 일수 계산 (주말 제외)
+        long vacationDays = calculateWorkingDays(startDate, endDate);
+
+        return template
+                .replace("${empId}", approvalInfoMap.get("empId"))
+                .replace("${employeeName}", approvalInfoMap.get("empName"))
+                .replace("${department}", approvalInfoMap.get("departName"))
+                .replace("${position}", approvalInfoMap.get("posiName"))
+                .replace("${vacationType}", (String) requestData.get("vacationType"))
+                .replace("${startDate}", (String) requestData.get("startDate"))
+                .replace("${endDate}", (String) requestData.get("endDate"))
+                //공휴일은 못넣었지만 주말제외는 넣음
+                .replace("${vacationDays}", String.valueOf(vacationDays))
+                .replace("${reason}", (String) requestData.get("reason"))
+                .replace("${requestDate}", LocalDate.now().toString());
+    }
+
+    //휴가 일수 계산 메소드(주말 제외하기가 목적임)
+    private long calculateWorkingDays(LocalDate startDate, LocalDate endDate) {
+        long days = 0;
+        LocalDate currentDate = startDate;
+
+        while(!currentDate.isAfter(endDate)) {
+            //
+            if(currentDate.getDayOfWeek() != DayOfWeek.SATURDAY
+            && currentDate.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                days ++;
+            }
+            currentDate = currentDate.plusDays(days);
+        }
+        return days;
+    }
+
+    //문서에 결재선추가 조합하기 로직
+    @Override
+    public String generateApprovalLineHtml(String documentHtml,
+                                           List<Map<String, Object>> approvers) {
+
+        try {
+            StringBuilder appendApproversHtml = new StringBuilder("<ul id=\"approver-list\">");
+
+            for (Map<String, Object> approver : approvers) {
+
+                if (approver.get("position") == null || approver.get("name") == null) {
+                    throw new IllegalArgumentException("결재자 정보가 올바르지 않습니다.");
+                }
+                String position = ((String) approver.get("position")).trim();
+                String name = ((String) approver.get("name")).trim();
+
+                appendApproversHtml.append("<li class=\"approver-box\">")
+                        .append("<div class=\"stamp-box\"></div>")
+                        .append("<div class=\"approver-info\">")
+                        .append(position).append(" ")
+                        .append(name)
+                        .append("</div>")
+                        .append("</li>");
+            }
+            appendApproversHtml.append("</ul>");
+
+            // 단순화된 태그로 교체
+            return documentHtml.replace(
+                    "<ul id=\"approver-list\"></ul>",
+                    appendApproversHtml.toString()
+            );
+
+        } catch (Exception e) {
+            log.error("결재선 HTML 생성 중 오류 발생", e);
+            throw new RuntimeException("결재선 HTML 생성 실패", e);
+        }
+    }
+}

@@ -1,0 +1,55 @@
+/**
+ * 
+ */document.addEventListener("DOMContentLoaded", () => {
+    const deleteBtn = document.getElementById("roomImgDelBtn");
+    const form = document.querySelector("form");
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+            // 삭제 상태 전달을 위한 hidden input 생성
+            const hiddenInput = document.createElement("input");
+            hiddenInput.type = "hidden";
+            hiddenInput.name = "roomImgDelete";
+            hiddenInput.value = "true";
+            form.appendChild(hiddenInput);
+
+            // 이미지와 삭제 버튼 제거
+            const imageWrapper = document.getElementById("roomImageWrapper");
+            if (imageWrapper) imageWrapper.remove();
+        });
+    }
+    
+    const delBtn = document.getElementById("btn-delete");
+    delBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+		const companyId = document.getElementById('hidden-company-id').value;
+        const confirmation = confirm("정말 삭제하시겠습니까?");
+        if (!confirmation) return;
+
+        const url = this.getAttribute("data-url");
+        if (!url) {
+            alert("삭제 URL이 설정되지 않았습니다.");
+            return;
+        }
+
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data === "success") {
+                alert("삭제 성공");
+			
+               location.href = "../../../"  +companyId +"/room"
+				
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch((error) => {
+            console.error("삭제 요청 중 오류 발생:", error);
+            alert("삭제에 실패했습니다.");
+        });
+    });
+});

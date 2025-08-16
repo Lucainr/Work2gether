@@ -1,0 +1,730 @@
+let allDepartments = []; // 부서 전체 목록 저장 배열
+let allPositions = [];   // 직급 전체 목록 저장 배열
+let allStatuses = [];    // 재직 상태 목록 저장 배열
+let allVstaCode = [];    // 기준 년도 목록 저장 배열 
+let addVacaBtn;
+// 서버에서 기준연도 목록 가져오는 function 
+function fetchGetVstaCode(){
+    return fetch(`${contextPath}/${companyId}/hrEmployee/readVstaCode`)
+           .then(response => response.json())
+           .then(data => {
+            if (!Array.isArray(data)) {
+                console.error("Expected an array but got:", data);
+                return; // 함수 종료
+            }
+                console.log("연도 리스트 응답데이터 :" , data);
+                allVstaCode = data.map(vsta => ({
+                    id : vsta.vstaCode 
+                    ,name : vsta.vstaCode
+                }));
+                // 기준년도 selectYear에 초기 렌더링 
+                modrenderOptions('selectYear',allVstaCode,allVstaCode[0]?.id || '');
+           })
+           .catch(error => console.log("기준년도 목록 가져오기 실패 :",error))
+}
+
+let empVacaModalBody = document.querySelector("#empVacaModalBody");
+function fetchVacationDetail(empId , vstaCode){
+    console.log("ㅁㅁㅁㅁㅁㅁ");
+    empVacaModalBody.innerHTML = ""; // 항상 초기화
+
+    const year = new Date().getFullYear().toString();
+    console.log("현재연도",year);
+    console.log("선택된 연도123 ",vstaCode);
+    
+    if(vstaCode === year){
+        console.log("true");
+        // addVacaBtn.style.visibility ='visible';  // 느림
+        addVacaBtn.style.display = 'block';
+    }else{
+        console.log("false");
+        // addVacaBtn.style.visibility ='hidden';
+        addVacaBtn.style.display = 'none';
+    }
+
+    return fetch(`${contextPath}/${companyId}/hrEmployee/vsDetail/${vstaCode}/${empId}`, {
+        headers : {
+            "Content-Type" : "application/json"
+        }
+    }).then(resp => {
+        if(!resp.ok) throw new Error("한 사원 휴가 현황 조회중 오류 발생");
+        return resp.json();
+    })
+    .then(data => {
+        console.log("사원 휴가 상세 응답 데이터 :", data);
+      
+
+        const row = `
+            <div class="table-responsive"> 
+                <table class="table">
+                    <tr>
+                        <th>연도</th>
+                        <td><select id="selectYear"></select></td>
+                    </tr>
+                    <tr>
+                        <th>사원명</th>
+                        <td>${data.employee.empName}</td>
+                    </tr>
+                    <tr>
+                        <th>부서</th>
+                        <td>${data.departName}</td>
+                    </tr>
+                    <tr>
+                        <th>직급</th>
+                        <td>${data.posiName}</td>
+                    </tr>
+                    <tr>
+                        <th>부여개수</th>
+                        <td>${data.vstaAllcount}</td>
+                    </tr>
+                    <tr>
+                        <th>사용개수</th>
+                        <td>${data.vstaUse}</td>
+                    </tr>
+                    <tr>
+                        <th>현재남은개수</th>
+                        <td>${data.vstaNowcount}</td>
+                    </tr>
+                    <tr>
+                        <th>병가사용개수</th>
+                        <td>${data.vstaSickcount}</td>
+                    </tr>
+                    <tr>
+                        <th>추가부여개수</th>
+                        <td>${data.vstaAppend}</td>
+                    </tr>
+                </table>
+            </div>
+        `;
+        empVacaModalBody.insertAdjacentHTML('beforeend',row);
+        modrenderOptions("selectYear",allVstaCode,vstaCode);
+        // let vsta = document.getElementById('#selectYear').value();
+        // console.log(vsta);
+
+        // 연도 변경 이벤트 리스너 등록
+        const yearSelect = document.querySelector("#selectYear");
+        yearSelect?.addEventListener("change", (e) => {
+            let selectedYear = e.target.value;
+            
+            fetchVacationDetail(empId, selectedYear);
+            console.log("선택한 연도 :" ,selectedYear);
+        });
+
+    })
+    .catch(error => {
+        // 요청 실패 또는 데이터가 없을 경우 처리
+        console.error("휴가 상세 가져오기 실패 :", error);
+    });
+}
+
+
+// 서버에서 부서 목록 가져오는 function 
+function fetchDepartments() {
+    return fetch(`${contextPath}/${companyId}/hrEmployee/departments`)
+        .then(response => response.json())
+        .then(data => {
+            allDepartments = data.map(dept => ({ code: dept.departCode, name: dept.departName })); // 모든 부서의 코드와 이름을 가져옴
+            renderOptions('selectDepart', allDepartments, ''); // 가져온 부서리스트를 select 태그에 렌더링 
+        })
+        .catch(error => console.error("부서 목록 가져오기 실패: ", error));
+}
+
+// 서버에서 직급 목록 가져오는 function 
+function fetchPositions() {
+    return fetch(`${contextPath}/${companyId}/hrEmployee/positions`)
+        .then(response => response.json())
+        .then(data => {
+            allPositions = data.map(posi => ({  // 모든 부서의 코드와 이름을 가져옴 
+                id: posi.code, // 직급코드 
+                name: posi.codeComment // 직급 이름 
+            }));
+            renderOptions('selectPosi', allPositions, ''); // 가져온 직급리스트를 select 태그에 렌더링 
+        })
+        .catch(error => console.error("직급 목록 가져오기 실패: ", error));
+}
+
+// 서버에서 재직 상태 목록 가져오는 function  
+function fetchStatuses() { 
+    return fetch(`${contextPath}/${companyId}/hrEmployee/commonCodes`)
+        .then(response => response.json())
+        .then(data => {
+            allStatuses = data.map(code => ({  // 모든 재직상태 코드 , 이름 가져옴 
+                id: code.code,  // 재직상태 코드 
+                name: code.codeComment // 상태 이름 
+            }));
+            renderOptions('selectStatus', allStatuses, ''); // 가져온 재직상태 리스트를 select 태그에 렌더링 
+        })
+        .catch(error => console.error("재직 상태 목록 가져오기 실패: ", error));
+}
+
+// 직원 리스트를 불러오는 함수 (페이지 번호를 기본 1로 설정 )
+function employeeList(page = 1) {
+    const department = document.querySelector('#selectDepart')?.value || '';    // 부서 선택 값 
+    const position = document.querySelector('#selectPosi')?.value || '';        // 직급 선택 값 
+    const startDate = document.querySelector('#startJoinDate')?.value || '';    // 시작 날짜 
+    const endDate = document.querySelector('#endJoinDate')?.value || '';        // 종료 날짜 
+    const status = document.querySelector('#selectStatus')?.value || '';        // 재직 상태
+    const searchWord = document.querySelector('#searchInput')?.value || '';     // 검색어 입력 값 
+
+    // fetch 요청 쿼리스트링으로 전송 (페이지 , 부서 , 직급 ,시작 종료 날짜 , 재직상태 , 검색어)
+    fetch(`${contextPath}/${companyId}/hrEmployee/hrList?page=${page}&department=${department}&position=${position}&startDate=${startDate}&endDate=${endDate}&status=${status}&searchWord=${searchWord}`)
+        .then((resp) => {
+            if (!resp.ok) throw new Error("응답 실패");
+            return resp.json();
+        })
+        .then((data) => {
+            console.log("응답 데이터 :", data);
+            const employeeList = data.employeeList;  // 직원 목록 추출 
+            const tbody = document.querySelector('#innerTbody'); // 테이블의 바디 
+            tbody.innerHTML = "";   // 기존 테이블 데이터 초기화 
+
+            // 직원 데이터를 테이블에 행 단위로 렌더링 
+            employeeList.forEach((emp) => {
+                const statusText = allStatuses.find(item => item.id === emp.empStatus)?.name || '상태 정보 없음'; // 재직 상태 설정
+                const positionText = emp.posiName || '직급 정보 없음';  // 직급 정보 설정 
+
+
+                // 퇴사자는 퇴사처리 할 필요없고 , 휴가현황 필요없음. 
+                const requireBtn = emp.empStatus !== 'Q'
+                                 ? `<a class="dropdown-item text-danger" href="javascript:void(0);" id="empRemoveBtn">
+                                            <i class="bx bx-trash me-1"></i>퇴사 처리
+                                    </a>`
+                                    : '';
+                const vacationBtn = emp.empStatus !== 'Q'
+                                  ? `<a class="dropdown-item text-primary" href="javascript:void(0);" id="empVacaDetailBtn">
+                                        <i class="bx bx-edit-alt me-1"></i>휴가 현황
+                                    </a>`
+                                    : '';
+                
+                const row = `
+                    <tr>
+                        <td>${emp.empId}</td>
+                        <td>${emp.empName}</td>
+                        <td>${emp.departmentVO.departName || ''}</td>
+                        <td>${positionText}</td>
+                        <td>${emp.empJoin.substring(0, 4)}-${emp.empJoin.substring(4, 6)}-${emp.empJoin.substring(6, 8)}</td>
+                        <td>${statusText}</td>
+                        <td>${emp.empMail}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="bx bx-dots-vertical-rounded"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    ${vacationBtn}
+                                    <a class="dropdown-item text-primary" href="javascript:void(0);" id="empModifyBtn">
+                                        <i class="bx bx-edit-alt me-1"></i>정보 수정
+                                    </a>
+                                    ${requireBtn}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>`;
+                tbody.insertAdjacentHTML("beforeend", row);
+            });
+
+            // 페이지 렌더링
+            renderPagination(data);
+
+            // "사원이 없습니다" 메시지 표시
+            if (employeeList.length === 0) {
+                tbody.insertAdjacentHTML("beforeend", `<tr><td colspan="7">사원이 없습니다.</td></tr>`);
+            }
+        })
+        .catch((error) => {
+            console.log("직원 목록 가져오기 실패: ", error);
+        });
+}
+
+
+// ★★★★★옵션 렌더링 함수★★★★★ (필터링을 위한 select 태그에 옵션 추가)
+function renderOptions(elementId, optionList, selectedValue) {
+    const selectElement = document.querySelector(`#${elementId}`);  // 대상 select 요소 가져오기 ( 부서 , 직급 , 상태 중에서)
+    selectElement.innerHTML = '<option value="">전체</option>';  // 기본옵션 "전체" 
+
+    // 옵션 리스트를 순회하면서 select 태그에 추가 
+    optionList.forEach(item => {
+        selectElement.insertAdjacentHTML("beforeend", `
+            <option value="${item.code || item.id}" ${selectedValue === (item.code || item.id) ? 'selected' : ''}>
+                ${item.name}
+            </option>
+        `);
+    });
+}
+
+// 옵션 렌더링 함수 (option 에 전체 없는 렌더링 함수.)
+function modrenderOptions(elementId, optionList, selectedValue) {
+    const selectElement = document.querySelector(`#${elementId}`);  // 대상 select 요소 가져오기 ( 부서 , 직급 , 상태 중에서)
+    selectElement.innerHTML = ''; // 기존 옵션을 모두 제거 (전체 옵션 포함)
+
+    // 옵션 리스트를 순회하면서 select 태그에 추가
+    optionList.forEach(item => {
+        selectElement.insertAdjacentHTML("beforeend", `
+            <option value="${item.code || item.id}" ${selectedValue === (item.code || item.id) ? 'selected' : ''}>
+                ${item.name}
+            </option>
+        `);
+    });
+}
+
+// 페이징 렌더링 함수
+function renderPagination(data) {
+    const pagination = document.getElementById('pagination'); // 페이지네이션 컨테이너 
+    pagination.innerHTML = ""; // 기존 페이지네이션션 초기화
+
+    const { currentPage, totalPage, startPage, endPage } = data;
+
+    // **totalPage가 1 이하일 때 페이지네이션 숨기기**
+    if (totalPage <= 1) {
+        pagination.style.display = "none"; // 페이지네이션 숨김
+        return;
+    } else {
+        pagination.style.display = "block"; // 페이지네이션 표시
+    }
+
+    let paginationHTML = ""; // 페이지네이션 HTML 문자열 초기화 
+
+    // **이전 버튼 (첫 페이지가 아닐 때만 렌더링)**
+    if (currentPage > 1) {
+        paginationHTML += `<button data-page="${currentPage - 1}" class="pagination-button btn"> &lt; </button>`;
+    }
+
+    // **페이지 번호 버튼**
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <button data-page="${i}" class="pagination-button btn ${i === currentPage ? 'active' : ''}">${i}</button>
+        `;
+    }
+
+    // **다음 버튼 (마지막 페이지가 아닐 때만 렌더링)**
+    if (currentPage < totalPage) {
+        paginationHTML += `<button data-page="${currentPage + 1}" class="pagination-button btn"> &gt; </button>`;
+    }
+
+    // HTML 삽입
+    pagination.insertAdjacentHTML("beforeend", paginationHTML); // 페이지네이션 HTML을 페이지네이션 컨테이너에 추가가
+
+    // 이벤트 리스너 추가
+    pagination.addEventListener('click', function (event) {
+        const target = event.target;    // 이벤트가 발생한 요소 가져옴 
+        if (target.tagName === 'BUTTON' && target.dataset.page) { // 버튼 태그이면서 데이터 속성 'page'가 있는지 확인 
+            const page = parseInt(target.dataset.page, 10); // 버튼의 페이지 번호를 정수로 변환 
+            employeeList(page);      // 해당 페이지의 직원 목록을 다시 불러옴. 
+        }
+    });
+}
+
+
+
+
+
+// 이벤트 바인딩 : 페이지 로드 시 실행되는 함수 
+document.addEventListener("DOMContentLoaded", () => {
+    fetchDepartments();  // 부서 목록을 불러옴 
+    fetchPositions();    // 직급 목록을 불러옴 
+    fetchStatuses();     // 재직상태 목록을 불러옴
+    employeeList(1);     // 첫번째 페이지의 직원 목록을 불러옴 
+    fetchGetVstaCode();
+
+    // 필터 선택 시 직원 목록 갱신 (검색어는 input 으로 받음)
+    document.querySelector('#selectStatus')?.addEventListener("change", () => employeeList(1));
+    document.querySelector('#selectDepart')?.addEventListener("change", () => employeeList(1));
+    document.querySelector('#selectPosi')?.addEventListener("change", () => employeeList(1));
+    document.querySelector('#startJoinDate')?.addEventListener("change", () => employeeList(1));
+    document.querySelector('#endJoinDate')?.addEventListener("change", () => employeeList(1));
+    document.querySelector('#searchInput')?.addEventListener("input", () => employeeList(1));
+
+
+    // 사원 등록 버튼 이벤트 바인딩 (사원 등록에 대한 처리는 hrAddEmployee.js 에서 처리함. )
+    const addBtn = document.querySelector('#addEmp');
+    if (addBtn) {
+        addBtn.addEventListener("click", () => {
+            console.log("사원추가 버튼 응답");
+
+            const width = 1250; // 창 너비
+            const height = 650; // 창 높이 
+            // 화면의 중앙에 배치하기 위해 위치 계산
+            const left = (window.innerWidth / 2) - (width / 2) + window.screenX;
+            const top = (window.innerHeight / 2) - (height / 2) + window.screenY;
+            
+            window.open(
+                `${contextPath}/${companyId}/hrEmployee/addForm`, // 열릴 url 경로
+                "_blank", // 새 창으로 열기 
+                `width=${width},height=${height},left=${left},top=${top}` // 창의 크기 및 위치
+            );
+
+        });
+    } else {
+        console.error("사원추가 버튼이 DOM에 존재하지 않습니다.");
+    }
+
+
+
+    // 정보수정 버튼을 눌렀을 때 모달 
+    const empModifyBtn = document.querySelector("#empModifyBtn"); //
+    const modEmpModal = document.querySelector("#modEmpModal");
+    let modEmpInstanceModal = null;  // 모달 인스턴스 변수 
+    const modEmpModalBody = document.querySelector("#modEmpModalBody");
+
+    // 수정버튼 클릭 이벤트 처리 
+    document.addEventListener("click", (e) => {
+        if (e.target.closest("#empModifyBtn")) {    // 수정 버튼이 클릭되었는지 확인 
+            e.preventDefault();
+
+            // 클릭된 버튼의 부모 <tr>에서 empId가져오기 
+            const targetRow = e.target.closest("tr"); 
+            // 첫번째 자식이 empId임. (첫번째 열에서 사원ID 추출) 
+            const empId = targetRow.querySelector("td:first-child").innerText.trim();
+            console.log("선택된 empId : ", empId);
+
+
+            fetch(`${contextPath}/${companyId}/hrEmployee/readOneEmp/${empId}`)
+                .then(resp => {
+                    if (!resp.ok) throw new Error("사원 한명 조회중 오류");
+
+                    return resp.json();
+                })
+                .then(data => {
+                    console.log("사원 한명 조회 데이터 :", data);
+                    
+                    // 모달 생성후 show 
+                    modEmpInstanceModal = new bootstrap.Modal(modEmpModal);
+                    modEmpInstanceModal.show();
+
+                    modEmpModalBody.innerHTML =
+                        `
+                <div class="table-responsive"> 
+                    <table class="table">
+                    <tr>
+                    <th>프로필 이미지</th>
+                    <td>${data.empImg
+                            ? `<img src="data:image/*;base64,${data.base64EmpImg}" alt="${data.empName}" style="max-width: 100px; max-height:100px">`
+                            : `<img src="${contextPath}/resources/images/profile-img.jpg" style="max-width: 100px; max-height:100px">`} </td></tr>
+                        <tr>
+                            <th>사원번호</th>
+                            <td>${data.empId || '-'} </td>
+                        </tr>
+
+                        <tr>
+                            <th>사원이름</th>
+                            <td>${data.empName || '-'} </td>
+                        </tr>
+                        <tr>
+                            <th>생년월일</th>
+                            <td>${data.empBirth || '-'} </td>
+                        </tr>
+                        <tr>
+                            <th>성별</th>
+                            <td>${data.empGender || '-'} </td>
+                        </tr>
+                        <tr>
+                            <th>주소</th>
+                            <td>${data.empAddr1 || '-'} </td>
+                        </tr>
+                        <tr>
+                            <th>상세주소</th>
+                            <td>${data.empAddr2 || '-'} </td>
+                        </tr>
+                        <tr>
+                            <th>핸드폰번호</th>
+                            <td>${data.empPhone || '-'} </td>
+                        </tr>
+                        <tr>
+                            <th>입사일</th>
+                            <td>${data.empJoin.substring(0, 4)}-${data.empJoin.substring(4, 6)}-${data.empJoin.substring(6, 8)}</td>
+                        </tr>
+                        <tr>
+                            <th>도장이미지</th>
+                            <td>${data.empSignimg
+                                ? `<img src="data:image/*;base64,${data.base64EmpSignimg}" alt="${data.empName}" style="max-width: 100px; max-height:100px">`
+                            : `없음`
+                            }</td>
+                        </tr>
+                        <tr>
+                            <th>재직상태</th>
+                            <td>
+                            <select id="modSelectStatus" class="form-select"></select>
+                                
+                            </td>
+                            
+                            
+                        </tr>
+                        <tr>
+                            <th>직급</th>
+                            <td>
+                            <select id="modSelectPosi" class="form-select"></select> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>이메일</th>
+                            <td>${data.empMail} </td>
+                        </tr>
+                        <tr>
+                            <th>부서</th>
+                            <td>
+                            <select id="modSelectDepart" class="form-select"></select>
+                            </td>
+                        </tr>
+                    </table>
+
+                </div>
+                `;
+                
+                // 상태 , 직급 ,부서 데이터를 select 태그에 채우기 
+                // 함수의 파라미터의 맨 마지막은 selectedValue 이기 때문에 함수호출 맨마지막에 처음에 보여줄 값을 설정해주는 것.
+                fetchStatuses().then(() => {
+                    const selectedStatusId = allStatuses.find(item => item.name === data.empStatus)?.id || '';
+                    modrenderOptions("modSelectStatus", allStatuses, selectedStatusId);
+                });
+                
+                fetchPositions().then(() => {
+                    const selectedPositionId = allPositions.find(item => item.name === data.posiName)?.id || '';
+                    modrenderOptions("modSelectPosi", allPositions, selectedPositionId);
+                });
+                
+                fetchDepartments().then(() => {
+                    modrenderOptions("modSelectDepart", allDepartments, data.departmentVO.departCode);
+                });
+                
+
+                })
+                .catch(error => {
+                    console.log("데이터 전송 오류 :", error);
+                })
+
+        }
+    })
+
+    document.addEventListener("click", (e) => {
+        if (e.target.id === "modEmpBtn") { // 클릭된 요소의 id가 'modEmpBtn' 인지 확인 
+            console.log("수정 버튼 클릭");
+            e.preventDefault();
+    
+            // 버튼 클릭 시점에 최신 DOM 요소를 가져옵니다.
+            const status = document.querySelector("#modSelectStatus")?.value || ''; // 선택된 재직 상태 값을 가져오고, 없으면 빈 문자열 설정정 
+            const position = document.querySelector("#modSelectPosi")?.value || ''; // 선택된 직급 값을 가져오고, 없으면 빈 문자열 설정 
+            const depart = document.querySelector("#modSelectDepart")?.value || ''; // 선택된 부서 값을 가져오고, 없으면 빈 문자열 설정 
+    
+            // empId 가져오기 : 모달 내부 테이블의 두번째 행(tr)의 첫번째 td값 
+            const empId = document.querySelector("#modEmpModalBody table tr:nth-child(2) td").innerText.trim();
+            
+            // 수정할 데이터를 객체로 만들기.
+            const formData = {
+                empId: empId,
+                empStatus: status,
+                posiId: position,
+                departCode: depart
+            };
+    
+            console.log(formData);
+    
+            fetch(`${contextPath}/${companyId}/hrEmployee/modOneEmp`, {
+                method: 'PUT',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(resp => {
+                if (!resp.ok) throw new Error("수정 도중 오류 발생");
+                return resp.json();
+            })
+            .then(data => {
+                console.log("수정 성공" ,data);
+                modEmpInstanceModal.hide();
+
+                modEmpModal.addEventListener('hidden.bs.modal', ()=>{
+                    Swal.fire({
+                        title : "수정 완료"
+                        ,text : "사원정보 수정이 완료되었습니다."
+                        ,icon : "success"
+                    }).then(()=>{
+                        employeeList(1);
+                    });
+
+                })
+             
+            })
+            .catch(error => {
+                console.error("서버 오류: ", error);
+            });
+        }
+    });
+    
+    document.addEventListener("click",(e)=>{
+        if(e.target.closest("#empRemoveBtn")){  // 선택된 요소의 id가 empRemoveBtn인지 확인  
+            e.preventDefault();
+            // 클릭된 버튼의 부모 <tr>에서 empId가져오기 
+            const targetRow = e.target.closest("tr"); 
+            // tr 요소의 첫번째 자식 td 에서 사원번호 가져오기 
+            const empId = targetRow.querySelector("td:first-child").innerText.trim();
+            console.log("사원번호 :" , empId);
+
+            Swal.fire({
+                title: "정말 퇴사처리 하시겠습니까?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "삭제",
+                cancelButtonText: "취소",
+                // reverseButtons: true 
+            }).then((result)=> {
+                if(result.isConfirmed){ // 사용자가 삭제 버튼을 눌렀을 경우 퇴사 처리 진행.
+                    fetch(`${contextPath}/${companyId}/hrEmployee/removeOneEmp/${empId}`,{
+                        method : "DELETE" 
+                    })
+                    .then(resp => {
+                        if(!resp.ok) throw new Error("퇴사 처리 도중 문제")
+                        return resp.text();
+                    })
+                    .then(data => {
+                        console.log("삭제 데이터 : ",data);
+                        Swal.fire({
+                            title: "퇴사 처리 완료",
+                            text: "퇴사처리 완료 되었습니다.",
+                            icon: "success"
+                        }).then(()=>{
+                            employeeList(1);
+                        })
+                    }).catch(error => {
+                        console.log(error);
+                        Swal.fire({
+                            title: "오류 발생",
+                            text: "퇴사처리중 중 문제가 발생했습니다.",
+                            icon: "error"
+                        });
+                    })// catch end  
+                } // isConfirmed end 
+            })
+
+        }
+    })
+
+    let empVacaModal = document.querySelector("#empVacaModal");
+    let empVacaInstanceModal = null;
+    
+    // 휴가 현황 버튼 클릭시 이벤트
+    document.addEventListener("click" ,(e) => {
+        if(e.target.closest("#empVacaDetailBtn")){
+            console.log("휴가 현황 클릭");
+
+            e.preventDefault();
+            // 클릭된 버튼의 부모 <tr>에서 empId가져오기 
+            const targetRow = e.target.closest("tr"); 
+            // tr 요소의 첫번째 자식 td 에서 사원번호 가져오기 
+            const empId = targetRow.querySelector("td:first-child").innerText.trim();
+            console.log("사원번호 : ", empId);
+
+            empVacaInstanceModal = new bootstrap.Modal(empVacaModal);
+            empVacaModalBody.dataset.empId = empId;
+            empVacaInstanceModal.show();
+
+            fetchGetVstaCode().then(()=> {
+                let defaultVstaCode = allVstaCode[0]?.id || '';
+                fetchVacationDetail(empId,defaultVstaCode);
+            });
+            
+             // 이벤트 리스너 중복 방지
+        // const year = new Date();
+        addVacaBtn = document.querySelector("#addVacaBtn");
+        // if(addVacaBtn.style.visibility !== 'hidden'){
+        //     addVacaBtn.style.visibility = 'hidden'
+        // }else{
+            
+        //     addVacaBtn.style.visibility = 'visible';
+        // }
+        addVacaBtn.removeEventListener("click", handleAddVacation); // 기존 이벤트 제거
+        addVacaBtn.addEventListener("click", handleAddVacation); // 새로운 이벤트 등록
+    }
+});
+
+            
+    // 휴가 추가 부여 로직
+function handleAddVacation(e) {
+    e.preventDefault();
+    console.log("휴가 추가부여 버튼 클릭");
+
+    Swal.fire({
+        position: 'center',
+        title: "휴가 추가 부여",
+        input: "number",
+        inputLabel: "추가 부여할 휴가 일수를 입력하세요",
+        inputAttributes: {
+            min: 1,
+            max: 365,
+            step: 1,
+        },
+        showCancelButton: true,
+        confirmButtonText: "완료",
+        cancelButtonText: "취소",
+        customClass: {
+            popup: 'swal2-custom-z-index' // 사용자 정의 클래스 추가
+            // ,popup : 'swal2-custom-position'
+        }
+        ,target: '#empVacaModal' // SweetAlert2가 이 모달을 기준으로 생성됨
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const addVacationDays = parseInt(result.value, 10);
+            if (!isNaN(addVacationDays) && addVacationDays > 0) {
+                const empVacaModalBody = document.querySelector("#empVacaModalBody");
+                const empId = empVacaModalBody.dataset.empId;
+                const vstaCode = new Date().getFullYear();
+
+                fetch(`${contextPath}/${companyId}/hrEmployee/modVacationStatus`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ empId, vstaCode, addVacationDays }),
+                })
+                    .then((resp) => {
+                        if (!resp.ok) throw new Error("추가 부여중 오류 발생");
+                        return resp.json();
+                    })
+                    .then((data) => {
+                        empVacaInstanceModal.hide();
+                        Swal.fire({
+                            position: 'center',
+                            title: "추가 부여 완료",
+                            text: `${addVacationDays}일의 휴가가 성공적으로 추가되었습니다.`,
+                            icon: "success",
+                            customClass: {
+                                popup: 'swal2-custom-z-index' // 사용자 정의 클래스 추가
+                                // ,popup : 'swal2-custom-position'
+                            }
+                        }).then(() => {
+                            employeeList(1);
+                        });
+                            
+                    })
+                    .catch((error) => {
+                        console.log("추가 부여중 에러 발생 ", error);
+                        Swal.fire({
+                            position: 'center',
+                            title: "휴가 부여 실패",
+                            text: "휴가 부여중 오류",
+                            icon: "error",
+                            customClass: {
+                                popup: 'swal2-custom-z-index' // 사용자 정의 클래스 추가
+                                // ,popup : 'swal2-custom-position'
+                            }
+                        });
+                    });
+            } else {
+                Swal.fire({
+                    position: 'center',
+                    title: "유효하지 않음",
+                    text: "올바른 값을 입력하세요",
+                    icon: "error",
+                    customClass: {
+                        popup: 'swal2-custom-z-index' // 사용자 정의 클래스 추가
+                        // ,popup : 'swal2-custom-position'
+                    }
+                });
+            }
+        }
+    });
+}
+
+            
+
+});

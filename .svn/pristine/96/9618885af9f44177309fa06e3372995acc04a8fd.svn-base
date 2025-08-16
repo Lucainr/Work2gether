@@ -1,0 +1,50 @@
+package kr.or.ddit.organitree.service;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import javax.inject.Inject;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import kr.or.ddit.annotation.RootContextWebConfig;
+import kr.or.ddit.organitree.dao.OrganiTreeMapper;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
+@RootContextWebConfig
+class OrganiTreeServiceImplTest {
+	@Inject
+	private OrganiTreeMapper dao;
+	
+	@Disabled
+	@Test
+	void testReadOrganiList() {
+		fail("Not yet implemented");
+	}
+	@Disabled
+	@Test
+	void testReadOneOrganiList() {
+		fail("Not yet implemented");
+	}
+	@Disabled
+	@Test
+	void testReadOneEmployeeDetail() {
+		fail("Not yet implemented");
+	}
+	@Disabled
+	@Test
+	void testSearchOneEmployee() {
+		fail("Not yet implemented");
+	}
+	@Disabled
+	@Test
+	void testReadDirectory() {
+		fail("Not yet implemented");
+	}
+
+	@Test
+	void testOrganiTreeServiceImpl() {
+		assertNotNull(dao.selectDirectory());
+	}
+
+}

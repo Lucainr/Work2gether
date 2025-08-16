@@ -1,0 +1,220 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<!DOCTYPE html>
+
+<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/mail/mailList.css"/>
+
+<h3 id="page-title">임시저장 메일함</h3>
+
+<div class="search-area">
+	<button type="button" class="search-btn btn btn-outline-primary" id="mail-refresh">메일 새로고침</button>
+	
+	<select name="type" id="type-select" class="form-control">
+		<option value="" label="전체"/>
+		<option value="to" label="수신자"/>
+		<option value="title" label="제목"/>
+		<option value="content" label="내용"/>
+	</select>
+	<input type="text" id="value-input" name="value" class="form-control"/>
+	<button type="button" class="search-btn btn btn-primary" id="search-btn">검색</button>
+
+</div>
+
+<table id="listtable" class="table mail-list-table">
+	<thead>
+		<tr>
+			<th class="th-checkbox"><input type="checkbox"></th>
+			<th class="to th-tofrom">수신자</th>
+			<th class="th-subject">제목</th>
+			<th class="th-date">날짜</th>
+		</tr>
+	</thead>
+	<tbody>
+		<c:if test="${not empty list }">
+			<c:forEach items="${list}" var="mail">
+				<tr id="listtr" data-messageid="${mail.mailMessageId}">
+					<td><input type="checkbox"></td>			
+					<td class="to">${mail.dmailTo}</td>			
+					<td>${mail.dmailSubject}</td>			
+					<td>${mail.dmailDate}</td>			
+				</tr>
+			</c:forEach>
+		</c:if>
+		<c:if test="${empty list}">
+			<tr>
+				<td colspan="5"> 메일이 존재하지 않습니다. <td>
+			</tr>
+		</c:if>
+	</tbody>
+	<tfoot>
+		<tr>
+			<td colspan="5">
+				<div class="paging-area">
+					${pagingHtml}
+				</div>
+				
+			</td>
+		</tr>
+	</tfoot>
+</table>
+
+<div class="modal fade" tabindex="-1" id="mail-detail" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">메일 상세보기</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table>
+        	<tr>
+        		<td class="modal-body-title">보낸 사람</td>
+        		<td class="modal-body-main" id="mail-from"></td>
+        	</tr>
+        	<tr>
+        		<td class="modal-body-title">받은 사람</td>
+        		<td class="modal-body-main" id="mail-to"></td>
+        	</tr>
+        	<tr>
+        		<td class="modal-body-title">참조</td>
+        		<td class="modal-body-main" id="mail-cc"></td>
+        	</tr>
+        	<tr>
+        		<td class="modal-body-title">숨은참조</td>
+        		<td class="modal-body-main" id="mail-bcc"></td>
+        	</tr>
+        	<tr>
+        		<td class="modal-body-title">보낸 날짜</td>
+        		<td class="modal-body-main" id="mail-date"></td>
+        	</tr>
+        	<tr>
+        		<td class="modal-body-title">제목</td>
+        		<td class="modal-body-main" id="mail-title"></td>
+        	</tr>
+        	<tr>
+        		<td class="modal-body-title">첨부파일</td>
+        		<td class="modal-body-main" id="mail-attch">
+        			<div id="attach-area">
+        				
+        			</div>
+        		</td>
+        	</tr>
+        	<tr>
+        		<td class="modal-body-title">내용</td>
+        		<td class="modal-body-main" id="mail-content"></td>
+        	</tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="re-btn" class="btn btn-primary">수정</button>
+        <button type="button" id="del-btn" class="btn btn-danger">삭제</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<form id="searchForm">
+	<input type="hidden" name="type" value="${type}"/>
+	<input type="hidden" name="value" value="${value}"/>
+	<input type="hidden" name="page" />
+</form>
+
+<script>
+	function paging(page) {
+		console.log(page);
+		searchForm.page.value = page;
+		searchForm.requestSubmit();
+	}
+	
+	
+    document.addEventListener("DOMContentLoaded", function() {
+    	
+    	const myModal = new bootstrap.Modal(document.querySelector('#mail-detail'));
+    	const mailSelector = document.querySelectorAll('.mail-list-table tbody tr');
+    	
+    	
+    	// 글자수 초과시 ... 으로 표시
+        const cells = document.querySelectorAll(".to"); // 모든 <td> 요소 선택
+        const maxLength = 20; // 허용할 최대 글자수
+
+        cells.forEach(cell => {
+            if (cell.textContent.length > maxLength) {
+                cell.textContent = cell.textContent.substring(0, maxLength) + "...";
+            }
+        });
+        // 검색 관련 스크립트
+        let $searchForm = $("#searchForm");
+    	let $searchBtn = $("#search-btn");	
+    	$searchBtn.on("click", function(){
+    		let $parent = $(this).parents(".search-area");
+    		$parent.find(":input[name]").each(function(index, ipt){
+    			console.log(ipt.name, ipt.value);
+
+    			if(searchForm[ipt.name]){
+    				searchForm[ipt.name].value=ipt.value.replace(/-/g, "");
+    			}
+    			
+    			$searchForm.submit(); 	
+    		});
+    	});
+    	
+    	mailSelector.forEach(function(myMail){
+    		myMail.addEventListener("click", async function(e) {
+    			// 이벤트를 부른 객체
+    			let target = e.target;
+    			// 그 객체의 부모 객체(tr 태그)
+    			let daddy = target.parentNode;
+    			let messageId = daddy.dataset.messageid;
+    			
+    			// 비동기 양식으로 messageId를 통해 하나의 메세지 가지고 오기
+    			// 가지고 온 하나의 메세지의 값을, 모달창에 뿌리고 모달 열기
+    			
+    			let url = window.location.pathname+'/'+messageId;
+    			let resp = await fetch(url);
+    			if(resp.ok){
+    				console.log("성공")
+    				let {empMail, dmailTo, dmailCc, dmailBcc, dmailDate, dmailSubject, mailAttachmentList, dmailContent} = await resp.json();
+    				console.log(mailAttachmentList[0].mailattachmentName);
+    				document.querySelector('#mail-from').innerHTML = empMail;
+    				document.querySelector('#mail-to').innerHTML = dmailTo;
+    				document.querySelector('#mail-cc').innerHTML = dmailCc;
+    				document.querySelector('#mail-bcc').innerHTML = dmailBcc;
+    				document.querySelector('#mail-date').innerHTML = dmailDate;
+    				document.querySelector('#mail-title').innerHTML = dmailSubject;
+    				document.querySelector('#mail-content').innerHTML  = dmailContent;
+    				
+//     				document.querySelector('#attach-area').innerHTML = mailAttachmentList[0].mailattachmentName;
+
+					let code = '';
+					
+					mailAttachmentList.forEach((mailAttachment, i)=>{
+						if(mailAttachment.mailattachmentName){
+							code += mailAttachment.mailattachmentName+"<br>";
+						}
+						
+					})
+					
+					document.querySelector('#attach-area').innerHTML = code;
+					
+					
+    				myModal.show();
+    			} else {
+    				console.log("실패")
+    			}
+    			
+    			
+    			
+    			
+    			
+    		});
+    	})
+    	
+    	
+    });
+</script>

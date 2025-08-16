@@ -1,0 +1,154 @@
+package kr.or.ddit.survey.service;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.commons.paging.PaginationInfo;
+import kr.or.ddit.survey.dao.SurveyMapper;
+import kr.or.ddit.survey.dao.SurveyResultMapper;
+import kr.or.ddit.survey.vo.SurveyBoardVO;
+import kr.or.ddit.survey.vo.SurveyItemVO;
+import kr.or.ddit.survey.vo.SurveyQuestionVO;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
+@Service
+public class SurveyServiceImpl implements SurveyService {
+	@Inject
+	private SurveyMapper mapper;
+	@Inject
+	private SurveyResultMapper resultMapper;
+	
+	@Override
+	public int readTotalRecord(PaginationInfo paging) {
+		return mapper.selectTotalRecord(paging);
+		
+	}
+
+	@Override
+	public List<SurveyBoardVO> readSurveyBoardList(PaginationInfo paging) {
+		int totalRecord = mapper.selectTotalRecord(paging);
+		paging.setTotalRecord(totalRecord);
+		List<SurveyBoardVO> list = mapper.selectSurveyBoardList(paging);
+		LocalDate now = LocalDate.now();
+		for(SurveyBoardVO board : list) {
+			LocalDate endDate = board.getSurboardEnddate();
+			Period endPeriod = Period.between(now, endDate);
+			int days = endPeriod.getDays();
+			if(days>=0 && days<=3) {
+				board.setEndDateWarning("WARNING");
+			}
+			
+			LocalDate startDate = board.getSurboardStdate();
+			if(startDate.isAfter(now)) {
+				// 시작날짜가 현재날짜보다 이후이면
+				board.setStartDateCheck("BEFORESTART");
+			}
+		}
+		return list;
+	}
+
+	@Override
+	public SurveyBoardVO readSurveyBoardDetail(String sboardNo) {
+		// TODO Auto-generated method stub
+		SurveyBoardVO surveyBoard = mapper.selectSurveyBoardDetail(sboardNo);
+		
+		String yn = surveyBoard.getSurboardYn();
+		// 지금 날짜
+		LocalDate now = LocalDate.now();
+		// 시작날짜
+		LocalDate startDate = surveyBoard.getSurboardStdate();
+		// 종료날짜
+		LocalDate endDate = surveyBoard.getSurboardEnddate();
+		// 지금날짜와 종료날짜 사이의 차이
+		Period endPeriod = Period.between(now, endDate);
+		int days = endPeriod.getDays();
+		
+		// 현재 진행중일 때 종료날짜 체크
+		if(yn.equals("Y")) {
+			if(days>=0 && days<=3) {
+				surveyBoard.setEndDateWarning("WARNING");
+			}
+			surveyBoard.setDetailUrl("survey/surveyDetail");
+		// 진행중이 아닐 때 yn.equals("N") 일 때
+		} else  {
+		log.info("days : {}",days);
+		log.info("startDate.isAfter(now) : {}",startDate.isAfter(now));
+			if(days<0) {
+				// 날짜가 이미 지났음 ==> 이미 종료
+				log.info("여기3");
+				surveyBoard.setDetailUrl("survey/surveyEndDetail");
+			} else if (startDate.isAfter(now)) {
+				// 아직 시작을 안 했음
+				log.info("여기4");
+				surveyBoard.setStartDateCheck("BEFORESTART");
+				surveyBoard.setDetailUrl("survey/surveyDetail");
+			} else {
+				surveyBoard.setDetailUrl("survey/surveyEndDetail");
+			}
+		}
+		
+		
+		
+		return surveyBoard;
+	}
+	
+	@Transactional(rollbackFor = Exception.class)
+	@Override
+	public ServiceResult createSurvey(SurveyBoardVO board) {
+		try {
+			mapper.insertSurveyBoard(board);
+			String sboardNo = board.getSboardNo();
+			List<SurveyQuestionVO> questions = board.getSurveyQuestionList();
+			for(SurveyQuestionVO question:questions) {
+				question.setSboardNo(sboardNo);
+				mapper.insertSurveyQuestion(question);
+				Integer surquesNo = question.getSurquesNo();
+				
+				List<SurveyItemVO> items = question.getSurveyItemList();
+				for(SurveyItemVO item:items) {
+					item.setSboardNo(sboardNo);
+					item.setSurquesNo(surquesNo);
+					mapper.insertSurveyItem(item);
+				}
+			}
+			return ServiceResult.OK;
+		} catch (Exception e) {
+			return ServiceResult.FAIL;
+		}
+	}
+
+
+	@Override
+	public ServiceResult modifySurveyBoard(SurveyBoardVO board) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Transactional(rollbackFor = Exception.class)
+	@Override
+	public ServiceResult deleteSurveyBoard(String sboardNo) {
+		try {
+			int itemResult = mapper.deleteSurveyItem(sboardNo);
+			int questionResult = mapper.deleteSurveyQuestion(sboardNo);
+			int boardResult = mapper.deleteSurveyBoard(sboardNo);
+			int resResult = resultMapper.deleteSurveyResult(sboardNo);
+			if(itemResult>0 && questionResult>0 && boardResult >0 && resResult > 0) {
+				return ServiceResult.OK;
+			} else {
+				return ServiceResult.FAIL;
+			}
+		} catch(Exception e) {
+			return ServiceResult.FAIL;
+		}
+	}
+
+	
+
+}

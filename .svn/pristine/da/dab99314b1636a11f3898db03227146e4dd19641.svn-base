@@ -1,0 +1,107 @@
+package kr.or.ddit.employee.hrController;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.commons.paging.PaginationInfo;
+import kr.or.ddit.employee.service.EmployeeService;
+import kr.or.ddit.employee.vo.EmployeeVO;
+import kr.or.ddit.organitree.vo.DepartmentVO;
+import kr.or.ddit.organitree.vo.PositionVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/{companyId}/hrEmployee")
+public class HrEmployeeController {
+	@Inject
+	private EmployeeService service;
+	
+	@GetMapping
+	public String get(
+			@PathVariable String companyId
+			) {
+		return "hrEmp/hrEmployeeList";
+	}
+		
+	
+	@GetMapping("/hrList")
+	@ResponseBody
+	public Map<String, Object> hrEmployeeList(
+				@PathVariable String companyId
+			   ,@RequestParam(required = false ,defaultValue = "1") int page
+			   ,@RequestParam(required = false) String department
+			   ,@RequestParam(required = false) String position
+			   ,@RequestParam(required = false) String searchWord
+			   ,@RequestParam(required = false) String startDate
+			   ,@RequestParam(required = false) String endDate
+			   ,@RequestParam(required = false) String status
+			  
+	){
+		PaginationInfo<EmployeeVO> paging = new PaginationInfo<EmployeeVO>();
+		paging.setCurrentPage(page);
+		
+		Map<String, Object> condition = new HashMap<String, Object>();
+//		condition.put("department", department != null && !department.isEmpty() 
+//                ? new HashMap<String, String>() {{ put("departCode", department); }}
+//                : new HashMap<String, String>()); // null 방지
+		condition.put("department", department);
+		condition.put("position", position);
+		condition.put("searchWord", searchWord);
+		condition.put("startDate", startDate);
+		condition.put("endDate", endDate);
+		condition.put("status", status);
+		
+		paging.setVariousCondition(condition);
+		log.info("vcondition : {}" , condition);
+	    List<EmployeeVO> list = service.readEmployeeList(paging);
+
+	    
+        Map<String, Object> result = new HashMap<>();
+        result.put("employeeList", list);
+        result.put("currentPage", paging.getCurrentPage());
+        result.put("totalPage", paging.getTotalPage());
+        result.put("startPage", paging.getStartPage());
+        result.put("endPage", Math.min(paging.getEndPage(), paging.getTotalPage()));
+        result.put("totalRecord", paging.getTotalRecord());
+        
+		return result;
+	}
+	
+	@GetMapping("/departments")
+	@ResponseBody
+	public List<DepartmentVO> getDepartments(
+			@PathVariable("companyId") String companyId
+			){
+		return service.readAllDeptList();
+	}
+	
+	@GetMapping("/positions")
+	@ResponseBody
+	public List<PositionVO> getPositions(
+			@PathVariable("companyId") String companyId
+			){
+		return service.readAllPosi();
+	}
+	
+	
+//	@GetMapping("/addForm")
+//	public String addEmployeeForm(
+//			@PathVariable("companyId") String companyId
+//			) {
+//		return "hrEmp/addEmpWindowForm";
+//	}
+		  
+	
+}

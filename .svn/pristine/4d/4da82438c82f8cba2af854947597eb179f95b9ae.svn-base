@@ -1,0 +1,28 @@
+package kr.or.ddit.gmail.vo;
+
+import java.util.List;
+
+import lombok.Data;
+
+@Data
+public class MailImportantVO {
+	private int rnum;
+	
+	
+	private String empId;
+	private String empMail;
+	private String mailMessageId;
+	private String imailTo;
+	private String imailFrom;
+	private String imailSubject;
+	private String imailDate;
+	private String imailContentType;
+	private String imailContent;
+	private String imailCc;
+	private String imailBcc;
+	private String imailReplyTo;
+	private String imailCalltime;
+	private String imailType;
+	
+	private List<MailAttachmentVO> mailAttachmentList;
+}

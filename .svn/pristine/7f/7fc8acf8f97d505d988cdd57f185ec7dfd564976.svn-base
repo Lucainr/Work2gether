@@ -1,0 +1,117 @@
+@charset "UTF-8";
+
+.filter-container {
+  display: flex; /* 가로 정렬 */
+  align-items: center; /* 세로 중앙 정렬 */
+  gap: 20px; /* 요소 간의 기본 간격 */
+  margin-bottom: 10px; /* 테이블과의 여백 */
+}
+
+.date-filter {
+  margin-right: 20px; /* 입사일자와 오른쪽 요소 사이의 간격 */
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 200px;
+  margin-left: auto; /* 검색창을 오른쪽 끝으로 정렬 */
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  box-sizing: border-box;
+}
+
+.search-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  pointer-events: none;
+}
+
+#pagination {
+    display: block;
+}
+
+#pagination.hidden {
+    display: none;
+}
+/* 페이지네이션 컨테이너 스타일 */
+.pagination-container {
+    display: flex;
+    justify-content: space-between; /* 양 끝에 배치 */
+    align-items: center;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+/* 페이지네이션 버튼 공통 스타일 */
+.pagination-container button {
+    border: 1px solid #ddd;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 활성 페이지 스타일 */
+.pagination-container button.active {
+    background-color: #6c5ce7;
+    color: white;
+    border: 1px solid #6c5ce7;
+}
+
+/* 호버 효과 */
+.pagination-container button:hover {
+    background-color: #dfe6e9;
+    color: #2d3436;
+}
+
+/* 비활성화된 버튼 스타일 */
+.pagination-container button:disabled {
+    background-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+}
+
+
+.btn-primary {
+    margin-left: 0; /* 기존 설정 유지 */
+    position: static; /* 기본 위치로 설정 */
+    bottom: auto;
+    right: auto;
+}
+
+.btn-danger {
+    margin-right: 10px; /* 여백 설정 유지 */
+}
+
+
+
+
+/* 10명의 행이 보여질 수 있도록 높이를 고정 */
+.card.container {
+    height: 800px; /* 예: 10명에 맞는 높이 (실제 높이에 맞게 조정) */
+    overflow-y: auto; /* 내용이 넘칠 경우 스크롤바 생성 */
+    max-height: 800px; /* 최대 높이 제한 */
+    position: relative; /* 버튼 고정 위치 설정 */
+}
+
+.modal-footer {
+    display: flex;            /* Flexbox 레이아웃 */
+    justify-content: flex-end; /* 오른쪽 정렬 */
+    gap: 10px;                /* 버튼 사이 간격 */
+    padding: 10px;            /* 안쪽 여백 */
+    margin-top: auto;         /* 본문 아래로 정렬 */
+    position: relative;       /* 부모 컨테이너 기준 */
+}
+
+
+

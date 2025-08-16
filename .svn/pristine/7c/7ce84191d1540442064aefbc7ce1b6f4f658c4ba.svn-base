@@ -1,0 +1,18 @@
+package kr.or.ddit.survey.vo;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+
+@Data
+@ToString
+@EqualsAndHashCode
+@NoArgsConstructor
+public class SurveyResultVO {
+	private String suritemNo; // 선택한 번호
+	private String surquesNo; // 질문(문항)의 번호
+	private String sboardNo; // 해당 게시판 번호
+	private String empId; // 응답자
+	private String resContent; // 비고
+}

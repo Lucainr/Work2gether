@@ -1,0 +1,72 @@
+this를 써야 하는 이유:
+
+    객체의 속성과 메서드에 명확하게 접근할 수 있음
+    동일한 이름의 전역 변수와 구분됨
+    객체의 캡슐화와 재사용성 향상
+    코드의 유지보수가 쉬워짐
+
+const PersonManager = {
+    name: "홍길동",
+    age: 30,
+
+    // 올바른 방법 - this 사용
+    introduce: function() {
+
+        // this로 자신의 속성에 접근
+        console.log(`내 이름은 ${this.name}이고 ${this.age}살입니다`);
+
+        // 자신의 다른 메서드 호출할 때도 this 사용
+        this.sayHello();
+    },
+
+    sayHello: function() {
+        console.log("안녕하세요");
+    },
+
+    // 잘못된 방법 - this 미사용
+        wrongIntroduce: function() {
+
+        // 직접 속성 이름으로 접근하면 안됨
+        console.log(`내 이름은 ${name}이고 ${age}살입니다`); // undefined 발생
+        sayHello(); // 에러 발생
+    }
+};
+
+
+
+예외적으로 화살표 함수에서는 this가 다르게 동작하므로 주의가 필요합니다
+
+const Manager = {
+    teamName: "개발팀",
+    members: ["김씨", "이씨"],
+
+    // 일반 함수 - this가 정상적으로 동작
+    showTeam: function() {
+        this.members.forEach(function(member) {
+            console.log(`${this.teamName}의 ${member}`); // 에러
+        });
+    },
+
+    // 화살표 함수 - 상위 스코프의 this를 유지
+    showTeamArrow: function() {
+        this.members.forEach((member) => {
+            console.log(`${this.teamName}의 ${member}`); // 정상 동작
+        });
+    }
+};
+
+예시 2
+
+const MyObject = {
+    name: "테스트",
+
+    sayHello: function() {
+        console.log("안녕하세요");
+        this.sayBye();  // 정상 동작 - MyObject의 sayBye 호출
+        sayBye();       // 에러 발생 - 전역 스코프에서 찾으려고 함
+    },
+
+    sayBye: function() {
+        console.log("안녕히가세요");
+    }
+};

@@ -1,0 +1,43 @@
+package kr.or.ddit.schedule.service;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.schedule.vo.ScheduleVO;
+
+@Service
+public class ScheduleServiceImpl implements ScheduleService {
+
+	@Override
+	public List<ScheduleVO> readScheduleList() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ScheduleVO readScheduleOne(String scheId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ServiceResult createSchedule(ScheduleVO schedule) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ServiceResult modifySchedule(ScheduleVO schedule) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ServiceResult removeSchedule(String scheId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

@@ -1,0 +1,15 @@
+package kr.or.ddit.payment;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+@RequestMapping("/{companyId}/payHistory")
+public class PaymentHistoryController {
+	
+	@GetMapping
+	public String payHistory() {
+		return "payment/payHistory";
+	}
+}

@@ -1,0 +1,44 @@
+package kr.or.ddit.attendance.service;
+
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.attendance.dao.AttendanceHistoryMapper;
+import kr.or.ddit.attendance.vo.AttendanceHistoryVO;
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.commons.paging.PaginationInfo;
+
+@Service
+public class AttendanceHistoryServiceImpl implements AttendanceHistoryService {
+	@Inject
+	private AttendanceHistoryMapper mapper;
+
+	@Override
+	public ServiceResult createAttendanceHistory(AttendanceHistoryVO attendance) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ServiceResult modifyAttendanceHistory(AttendanceHistoryVO attendance) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ServiceResult deleteAttendanceHistory(String atthisId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<AttendanceHistoryVO> readAttendanceHistoryList(PaginationInfo paging) {
+		int totalRecord = mapper.selectTotalRecord(paging);
+		paging.setTotalRecord(totalRecord);
+		return mapper.selectAttendanceHistoryList(paging);
+	}
+
+}

@@ -1,0 +1,40 @@
+/**
+ * 
+ */
+document.addEventListener("DOMContentLoaded", function () {
+    // 에디터 초기값 (지금은 아무것도 없는 빈 문자열)
+    var initialValue = '';
+
+    // Toast UI Editor 초기화
+    const editor = new toastui.Editor({
+        el: document.querySelector('#editor'),
+        height: '500px',          // 에디터 높이
+        initialEditType: 'wysiwyg',
+        initialValue: initialValue,
+        previewStyle: 'vertical'
+    });
+
+    const form = document.querySelector('#question-form');
+    form.addEventListener('submit', function (e) {
+        // 에디터의 현재 HTML 내용을 얻음
+        var contentHtml = editor.getHTML();
+        document.getElementById('quContent').value = contentHtml;
+    });
+
+    // 이미지 업로드 훅 설정(공통코드로 쓰기위해 POST에 배치)
+    editor.addHook('addImageBlobHook', function (blob, callback) {
+        var formData = new FormData();
+        formData.append('uploadFile', blob);
+
+        fetch(uploadImageUrl, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                callback(data.url);
+            })
+            .catch(error => console.error(error));
+    });
+
+});

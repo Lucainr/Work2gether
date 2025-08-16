@@ -1,0 +1,33 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+
+<h3 id="page-title">메일 보내기</h3>
+
+<div id="write-option-area">
+	<table>
+		<tr>
+			<td>받는 사람</td>
+			<td><input type="text"/></td>
+		</tr>
+		<tr>
+			<td>참조</td>
+			<td><input type="text"/></td>
+		</tr>
+		<tr>
+			<td>숨은 참조</td>
+			<td><input type="text"/></td>
+		</tr>
+		<tr>
+			<td>제목</td>
+			<td><input type="text"/></td>
+		</tr>
+		<tr>
+			<td>첨부파일</td>
+			<td><input type="text"/></td>
+		</tr>
+	</table>
+</div>
+<div class="editor-area">
+
+</div>

@@ -1,0 +1,65 @@
+package kr.or.ddit.project.service;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.project.dao.ProjectMapper;
+import kr.or.ddit.project.vo.ProjectMemberVO;
+import kr.or.ddit.project.vo.ProjectVO;
+import okhttp3.internal.tls.OkHostnameVerifier;
+
+@Service
+public class ProjectServiceImpl implements ProjectService {
+	 
+	@Autowired
+	private ProjectMapper mapper;
+	
+	@Override
+	public List<ProjectVO> readProjectList() {
+		// TODO Auto-generated method stub
+		return mapper.readProjectList();
+	}
+
+	@Override
+	public ProjectVO readProject(String projId) {
+		return mapper.readProject(projId);
+	}
+
+	@Override
+	public ServiceResult createProject(ProjectVO project) {
+		int rowcnt = mapper.insertProject(project);
+		return rowcnt > 0 ? ServiceResult.OK : ServiceResult.FAIL;
+	}
+
+	@Override
+	public ServiceResult modifyProject(ProjectVO project) {
+		int rowcnt = mapper.updateProject(project);
+		return rowcnt > 0 ? ServiceResult.OK : ServiceResult.FAIL;
+	}
+
+	@Override
+	public ServiceResult removeProject(String projId) {
+		int rowcnt = mapper.deleteProject(projId);
+		return rowcnt > 0 ? ServiceResult.OK : ServiceResult.FAIL;
+	}
+
+	@Override
+	public List<ProjectMemberVO> readProjectMemberList(String projId) {
+		return mapper.readProjectMemberList(projId);
+	}
+
+	@Override
+	public ServiceResult insertProjectMember(List<ProjectMemberVO> list) {
+		int rowcnt = 0;
+		for(ProjectMemberVO projectMemberVO : list) {
+			rowcnt = mapper.insertProjectMember(projectMemberVO);
+		}
+		return rowcnt > 0 ? ServiceResult.OK : ServiceResult.FAIL;
+	}
+	
+	
+
+}

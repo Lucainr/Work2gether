@@ -1,0 +1,190 @@
+스크립트가 이해가안될때 이거 옆에띄어놓고 데이터넣어본다는식으로 한번 흐름을 따라가보자
+
+// 조직도 데이터
+const orgData = [
+{
+departCode: "d001",
+departName: "경영지원본부",
+departParentcode: null,
+departStatus: "Y",
+departHead: "a001"  // 부서장 ID
+},
+{
+departCode: "d002",
+departName: "인사팀",
+departParentcode: "d001",
+departStatus: "Y",
+departHead: "b001"
+},
+{
+departCode: "d003",
+departName: "총무팀",
+departParentcode: "d001",
+departStatus: "Y",
+departHead: "d001"
+},
+{
+departCode: "d004",
+departName: "인사1팀",
+departParentcode: "d002",
+departStatus: "Y",
+departHead: "g001"
+}
+];
+
+// 사원 데이터
+const empData = [
+{
+empId: "a001",
+empName: "김사장",
+departCode: "d001",
+posiName: "대표이사"
+},
+{
+empId: "b001",
+empName: "박인사",
+departCode: "d002",
+posiName: "팀장"
+},
+{
+empId: "c001",
+empName: "이대리",
+departCode: "d002",
+posiName: "대리"
+},
+{
+empId: "d001",
+empName: "최총무",
+departCode: "d003",
+posiName: "팀장"
+},
+{
+empId: "e001",
+empName: "정사원",
+departCode: "d003",
+posiName: "사원"
+},
+{
+empId: "g001",
+empName: "강팀장",
+departCode: "d004",
+posiName: "팀장"
+}
+];
+
+이라고칩시다.
+
+
+loadOrgTreeWithEmployees 함수:
+
+// 먼저 조직도와 사원 데이터를 동시에 불러옵니다
+const [orgData, empData] = await Promise.all([...]);
+
+// 부서별로 사원을 그룹화합니다
+const employeeByDept = {};
+empData.forEach(emp => {
+    // 처음 해당 부서 키를 만날 때 빈 배열 생성
+    if (!employeeByDept[emp.departCode]){
+    employeeByDept[emp.departCode] = [];
+    }
+    // 해당 부서 배열에 사원 추가
+    employeeByDept[emp.departCode].push(emp);
+});
+
+/* 결과 예시:
+employeeByDept = {
+'d001': [{empId: 'a001', empName: '김사장', ...}],
+'d002': [{empId: 'b001', empName: '박인사', ...}, {empId: 'c001', empName: '이대리', ...}],
+'d003': [{empId: 'd001', empName: '최총무', ...}, {empId: 'e001', empName: '정사원', ...}],
+'d004': [{empId: 'g001', empName: '강팀장', ...}]
+}
+*/
+
+buildTreeDataWithEmployees 함수:
+
+// ...dept는 스프레드 연산자로, 기존 부서 객체의 모든 속성을 복사합니다
+map[dept.departCode] = {
+    ...dept,  // departCode, departName 등 기존 속성 복사
+    children: [],  // 하위 부서를 담을 빈 배열
+    employees: employeesByDept[dept.departCode] || []  // 해당 부서의 사원들 할당, 없으면 빈 배열
+};
+
+/* 예시 - d001 부서의 경우:
+map['d001'] = {
+    departCode: 'd001',
+    departName: '경영지원본부',
+    departParentcode: null,
+    departHead: 'a001',
+    children: [],  // 나중에 d002, d003이 여기 들어갑니다
+    employees: [{empId: 'a001', empName: '김사장', ...}]
+}
+*/
+
+3. 부모 자식관계 형성
+activeDepts.forEach(dept => {
+    if (dept.departParentcode && map[dept.departParentcode]){
+        // d002의 경우: map['d001'].children.push(map['d002'])
+        map[dept.departParentcode].children.push(map[dept.departCode]);
+    } else if (!dept.departParentcode) {
+        // d001의 경우: 최상위 부서이므로 tree 배열에 직접 추가
+        tree.push(map[dept.departCode]);
+    }
+});
+
+/* 최종 tree 구조:
+[{
+    departCode: 'd001',
+    departName: '경영지원본부',
+    employees: [{김사장 정보}],
+    children: [
+        {
+            departCode: 'd002',
+            departName: '인사팀',
+            employees: [{박인사 정보}, {이대리 정보}],
+            children: [
+                {
+                    departCode: 'd004',
+                    departName: '인사1팀',
+                    employees: [{강팀장 정보}],
+                    children: []
+                }
+            ]
+        },
+        {
+        departCode: 'd003',
+        departName: '총무팀',
+        employees: [{최총무 정보}, {정사원 정보}],
+        children: []
+        }
+    ]
+}]
+*/
+renderTreeWithEmployees 함수:
+
+<!--<ul>-->
+<!--    <li class="folder">-->
+<!--        <span data-code="d001">경영지원본부</span>-->
+<!--        <ul class="employees">-->
+<!--            <li class="department-head"><span>대표이사 김사장 (부서장)</span></li>-->
+<!--        </ul>-->
+<!--        <ul>-->
+<!--            <li class="folder">-->
+<!--                <span data-code="d002">인사팀</span>-->
+<!--                <ul class="employees">-->
+<!--                    <li class="department-head"><span>팀장 박인사 (부서장)</span></li>-->
+<!--                    <li class="employee"><span>대리 이대리</span></li>-->
+<!--                </ul>-->
+<!--                <ul>-->
+<!--                    <li class="folder">-->
+<!--                        &lt;!&ndash; d004 인사1팀 정보 &ndash;&gt;-->
+<!--                    </li>-->
+<!--                </ul>-->
+<!--            </li>-->
+<!--            <li class="folder">-->
+<!--                &lt;!&ndash; d003 총무팀 정보 &ndash;&gt;-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </li>-->
+<!--</ul>-->
+
+결론적으로 이렇게만들어짐

@@ -1,0 +1,158 @@
+
+let allDepartments = [];
+let allPositions = [];
+
+// 서버에서 부서 목록 가져오는 function 
+function fetchDepartments() {
+    return fetch(`${contextPath}/${companyId}/hrEmployee/departments`)
+        .then(response => response.json())
+        .then(data => {
+            allDepartments = data.map(dept => ({ code: dept.departCode, name: dept.departName })); // 모든 부서의 코드와 이름을 가져옴
+            renderOptions('selectDepart', allDepartments, ''); // 가져온 부서리스트를 select 태그에 렌더링 
+        })
+        .catch(error => console.error("부서 목록 가져오기 실패: ", error));
+}
+
+// 서버에서 직급 목록 가져오는 function 
+function fetchPositions() {
+    return fetch(`${contextPath}/${companyId}/hrEmployee/positions`)
+        .then(response => response.json())
+        .then(data => {
+            allPositions = data.map(posi => ({  // 모든 부서의 코드와 이름을 가져옴 
+                id: posi.code, // 직급코드 
+                name: posi.codeComment // 직급 이름 
+            }));
+            renderOptions('selectPosi', allPositions, ''); // 가져온 직급리스트를 select 태그에 렌더링 
+        })
+        .catch(error => console.error("직급 목록 가져오기 실패: ", error));
+}
+
+// 근태 리스트를 불러오는 함수(페이지 기본 1 로 설정)
+function attendanceList(page=1){
+    const department = document.querySelector("#selectDepart")?.value || '';  // 부서 선택값
+    const position = document.querySelector("#selectPosi")?.value || '';      // 직급 선택값 
+    const startDate = document.querySelector("#startJoinDate")?.value || '';  // 조회 시작일
+    const endDate = document.querySelector("#endJoinDate")?.value || '';      // 조회 종료일
+    const searchWord = document.querySelector("#searchInput")?.value || '';   // 검색어 값 
+
+    fetch(`${contextPath}/${companyId}/attendance/attendList?page=${page}&department=${department}&position=${position}&startDate=${startDate}&endDate=${endDate}&searchWord=${searchWord}`)
+        .then((resp) => {
+            if(!resp.ok) throw new Error("리스트 가져오는 중 오류 발생");
+            return resp.json();
+        })
+        .then((data) => {
+            console.log("리스트 응답데이터 : ", data);
+            const attendList = data.attendList || []; // 근태 목록 추출
+            const tbody = document.querySelector("#innerTbody");
+            tbody.innerHTML="" // 테이블 데이터 초기화식 
+
+            if(data.length === 0) {
+                tbody.insertAdjacentHTML("beforeend",`<tr><td colspan="11">사원이 없습니다.</td></tr>`)
+
+            }
+
+            attendList.forEach((att) => {
+                const positionText = att.posiName || "직급 정보 없음"; //직급 정보 설정 
+                const causeText  = att.atthisCause || "없음";
+                const atthisOverText = att.atthisOver || "-";
+
+                const row = `
+                    <tr>
+                        <td>${att.atthisId}</td>
+                        <td>${att.emp.empName}</td>
+                        <td>${positionText}</td>
+                        <td>${att.departName}</td>
+                        <td>${att.hahisTime}</td>
+                        <td>${att.hleaveTime}</td>
+                        <td>${att.atthisOverYn}</td>
+                        <td>${atthisOverText}</td>
+                        <td>${att.attstaIdIn}</td>
+                        <td>${att.attstaIdOut}</td>
+                        <td>${causeText}</td>
+                    </tr>
+                    `;
+                tbody.insertAdjacentHTML("beforeend",row);
+            });
+            renderPagination(data);
+           
+        })
+}
+
+// 옵션 렌더링 함수 (필터링을 위한 select 태그에 option 추가)
+function renderOptions(elementId , optionList , selectedValue){
+    const selectElement = document.querySelector(`#${elementId}`); // 대상 select 요소 가져오기 
+    selectElement.innerHTML = '<option value="">전체</option>'; // 기본 옵션 전체 
+
+    // 옵션 리스트 순회하면서 select 태그에 추가
+    optionList.forEach(item => {
+        selectElement.insertAdjacentHTML("beforeend",`
+            <option value="${item.code || item.id}" ${selectedValue === (item.code || item.id) ? 'selected' : ''}>
+                ${item.name}
+            </option>
+            `);
+    });
+}
+
+// 페이지 렌더링 함수
+function renderPagination(data) {
+    const pagination = document.querySelector('#pagination');
+    pagination.innerHTML = ""; // 기존 HTML 초기화
+    const { currentPage, totalPage, startPage, endPage } = data;
+
+    // 페이지네이션 숨기기 조건
+    if (!totalPage || totalPage <= 1) {
+        pagination.style.display = 'none';
+        return;
+    } else {
+        pagination.style.display = 'block';
+    }
+
+    let paginationHTML = "";
+
+    // 이전 버튼
+    if (currentPage > 1) {
+        paginationHTML += `<button data-page="${currentPage - 1}" class="pagination-button btn">&lt;</button>`;
+    }
+
+    // 페이지 번호 버튼
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `<button data-page="${i}" class="pagination-button btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
+    }
+
+    // 다음 버튼
+    if (currentPage < totalPage) {
+        paginationHTML += `<button data-page="${currentPage + 1}" class="pagination-button btn">&gt;</button>`;
+    }
+
+    // 페이지네이션 HTML 추가
+    pagination.insertAdjacentHTML("beforeend", paginationHTML);
+}
+
+// 이벤트 리스너 단 한 번 등록
+document.querySelector('#pagination').addEventListener("click", (e) => {
+    const target = e.target;
+    if (target.tagName === 'BUTTON' && target.dataset.page) {
+        const page = parseInt(target.dataset.page, 10);
+        attendanceList(page); // 클릭된 페이지 번호로 리스트 갱신
+    }
+});
+
+
+
+
+document.addEventListener("DOMContentLoaded" , () => {
+    fetchDepartments();
+    fetchPositions();
+    attendanceList(1); 
+
+    // 필터 선택 시 직원 목록 갱신 (검색어는 input 으로 받음)
+    document.querySelector('#selectDepart')?.addEventListener("change", () => attendanceList(1));
+    document.querySelector('#selectPosi')?.addEventListener("change", () => attendanceList(1));
+    document.querySelector('#startJoinDate')?.addEventListener("change", () => attendanceList(1));
+    document.querySelector('#endJoinDate')?.addEventListener("change", () => attendanceList(1));
+    document.querySelector('#searchInput')?.addEventListener("input", () => attendanceList(1));    
+
+})
+
+
+

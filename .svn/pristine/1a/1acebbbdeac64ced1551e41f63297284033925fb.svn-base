@@ -1,0 +1,163 @@
+bind가 필요한 상황:
+
+    객체의 메서드를 이벤트 리스너의 콜백으로 전달할 때
+    메서드를 다른 함수의 콜백으로 전달할 때
+    메서드가 다른 컨텍스트에서 실행될 때
+
+bind가 필요없는 상황:
+
+    객체 내부에서 직접 메서드를 호출할 때
+    화살표 함수를 사용할 때
+    메서드를 직접 호출하는 경우
+
+이런 이유로 우리가 앞서 수정한 코드에서도 이벤트 리스너에 바인딩이 필요했던 것입니다
+
+
+예시) 결재문서를 관리하는 객체가 있다고 가정하자
+
+const DocumentManager = {
+currentUser: "홍길동",
+department: "인사팀",
+
+    // 1. 일반적인 메서드 호출
+    showUserInfo: function() {
+        console.log(`현재 사용자: ${this.currentUser}, 부서: ${this.department}`);
+        // 여기서 this는 DocumentManager를 가리킴
+    },
+
+    // 2. 이벤트 리스너에서의 this 문제
+    setupEventListeners: function() {
+        const saveButton = document.getElementById('saveButton');
+
+        // 2-1. 잘못된 방식 - this가 button을 가리키게 됨
+        saveButton.addEventListener('click', function() {
+            console.log(`${this.currentUser}님이 문서를 저장합니다`); // undefined님이 문서를 저장합니다
+        });
+
+        // 2-2. bind 사용 - this가 DocumentManager를 가리키게 됨
+        saveButton.addEventListener('click', function() {
+            console.log(`${this.currentUser}님이 문서를 저장합니다`); // 홍길동님이 문서를 저장합니다
+        }.bind(this));
+
+        // 2-3. 화살표 함수 사용 - 이것도 좋은 방법
+        saveButton.addEventListener('click', () => {
+            console.log(`${this.currentUser}님이 문서를 저장합니다`); // 홍길동님이 문서를 저장합니다
+        });
+    }
+};
+
+// 실제 사용 예시
+
+// 1. 일반적인 메서드 호출 - 문제 없음
+DocumentManager.showUserInfo();  // "현재 사용자: 홍길동, 부서: 인사팀"
+
+// 2. 이벤트 콜백으로 전달될 때 - 문제 발생
+const button = document.getElementById('button');
+
+// 2-1. 잘못된 방식
+button.addEventListener('click', DocumentManager.showUserInfo);
+// 클릭 시 "현재 사용자: undefined, 부서: undefined"
+
+// 2-2. bind 사용 - 올바른 방식
+button.addEventListener('click', DocumentManager.showUserInfo.bind(DocumentManager));
+// 클릭 시 "현재 사용자: 홍길동, 부서: 인사팀"
+
+
+이해를 돕기위한 추가 예시
+const ApprovalVacation = {
+    userName: "김과장",
+
+    // 휴가 신청 처리
+    submitVacation: function() {
+        console.log(`${this.userName}이 휴가를 신청합니다`);
+    },
+
+    // 이벤트 리스너 설정
+    setEventListeners: function() {
+        const submitButton = document.getElementById('submitButton');
+
+        // Case 1: bind 없이 - 잘못된 방식
+        submitButton.addEventListener('click', this.submitVacation);
+        // 클릭 시 "undefined이 휴가를 신청합니다"
+
+        // Case 2: bind 사용 - 올바른 방식
+        submitButton.addEventListener('click', this.submitVacation.bind(this));
+        // 클릭 시 "김과장이 휴가를 신청합니다"
+
+        // Case 3: 화살표 함수 사용 - 또 다른 올바른 방식
+        submitButton.addEventListener('click', () => this.submitVacation());
+        // 클릭 시 "김과장이 휴가를 신청합니다"
+    }
+};
+
+내 질문
+ >>> submitButton.addEventListener('click', this.submitVacation.bind(this));
+여기서 bind(this)를하면 ApprovalVacation이라는 객체(최상위)의 this를 가르키게되는거야?
+만약 bind를빼버리면 submitButton을가르키게되는거야?
+
+답변
+ <<< 네, 정확히 이해하셨습니다!
+const ApprovalVacation = {
+    userName: "김과장",
+
+    submitVacation: function() {
+        console.log(this); // 여기서 this가 가리키는 것이 달라집니다
+        console.log(`${this.userName}이 휴가를 신청합니다`);
+    },
+
+    setEventListeners: function() {
+        const submitButton = document.getElementById('submitButton');
+
+        // Case 1: bind 없이
+        submitButton.addEventListener('click', this.submitVacation);
+        // 클릭 시 this는 submitButton(버튼 요소)을 가리킴
+        // this.userName은 undefined (버튼에는 userName이라는 속성이 없으므로)
+
+        // Case 2: bind(this) 사용
+        submitButton.addEventListener('click', this.submitVacation.bind(this));
+        // 클릭 시 this는 ApprovalVacation 객체를 가리킴
+        // this.userName은 "김과장"이 됨
+    }
+};
+
+
+const ApprovalVacation = {
+    userName: "김과장",
+
+    submitVacation: function() {
+        console.log('this가 가리키는 것:', this);
+
+        // this가 어떤 타입인지 확인
+        if (this instanceof HTMLButtonElement) {
+            console.log('this는 버튼 요소입니다');
+        }
+        if (this === ApprovalVacation) {
+            console.log('this는 ApprovalVacation 객체입니다');
+        }
+    },
+
+    setEventListeners: function() {
+        const submitButton = document.getElementById('submitButton');
+
+        // bind 없이
+        submitButton.addEventListener('click', this.submitVacation);
+        // 클릭 시 출력: "this는 버튼 요소입니다"
+
+        // bind(this) 사용
+        submitButton.addEventListener('click', this.submitVacation.bind(this));
+        // 클릭 시 출력: "this는 ApprovalVacation 객체입니다"
+    }
+};
+
+결론
+
+bind(this) 사용 시
+
+    this → ApprovalVacation 객체
+    객체의 속성과 메서드에 정상적으로 접근 가능
+
+
+bind(this) 미사용 시
+
+    this → 클릭된 버튼 요소(submitButton)
+    객체의 속성에 접근 불가 (undefined 발생)

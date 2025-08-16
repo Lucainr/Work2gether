@@ -1,0 +1,40 @@
+/**
+ * 
+ */
+
+document.addEventListener("DOMContentLoaded", () => {
+// 기존 첨부파일 삭제 버튼 이벤트 바인딩
+    document.querySelectorAll("[data-atch-file-id][data-file-sn]")
+        .forEach(el => {
+            el.addEventListener("click", async (e) => {
+                e.preventDefault();
+
+                const atchFileId = el.dataset.atchFileId;
+                const fileSn = el.dataset.fileSn;
+
+                try {
+                    const resp = await fetch(`${contextPath}/${companyId}/question/${quNo}/atch/${atchFileId}/${fileSn}`, {
+                        method: "DELETE",
+                        headers: {
+                            "Accept": "application/json"
+                        }
+                    });
+
+                    if (resp.ok) {
+                        const result = await resp.json();
+                        if (result.success) {
+                            //삭제된 파일 HTML요소 제거하기
+                            el.parentElement.remove();
+                        } else {
+                            alert("파일 삭제에 실패해버렸다~~")
+                        }
+                    } else {
+                        alert("서버문제인듯~")
+                    }
+                } catch (error){
+                    console.error("파일 삭제중 오류 발생함 : ", error);
+                    alert("파일 삭제중에 오류가 발생함");
+                }
+            })
+        })
+});

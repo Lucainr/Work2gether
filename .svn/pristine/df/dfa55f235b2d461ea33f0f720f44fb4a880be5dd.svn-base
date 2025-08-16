@@ -1,0 +1,50 @@
+package kr.or.ddit.gmail.service;
+
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.commons.paging.PaginationInfo;
+import kr.or.ddit.gmail.dao.MailDeleteMapper;
+import kr.or.ddit.gmail.vo.MailDeleteVO;
+
+@Service
+public class MailDeleteServiceImpl implements MailDeleteService {
+	@Inject
+	private MailDeleteMapper mapper;
+	
+	@Override
+	public String readLastApiCallTime(String empMail) {
+		return mapper.selectLastApiCallTime(empMail);
+	}
+
+	@Override
+	public List<MailDeleteVO> readDeleteMailList(PaginationInfo paging) {
+		int totalRecord = mapper.selectTotalRecord(paging);
+		paging.setTotalRecord(totalRecord);
+		return mapper.selectDeleteMailList(paging);
+	}
+
+	@Override
+	public MailDeleteVO readDeleteMailDetail(String messageId) {
+		return mapper.selectDeleteMailDetail(messageId);
+	}
+
+	@Override
+	public int readDeleteMailExist(MailDeleteVO deleteMail) {
+		return mapper.selectDeleteMailExist(deleteMail);
+	}
+
+	@Override
+	public int createDeleteMail(MailDeleteVO deleteMail) {
+		return mapper.insertDeleteMail(deleteMail);
+	}
+
+	@Override
+	public int deleteDeleteMail(String mailMessageid) {
+		return mapper.deleteDeleteMail(mailMessageid);
+	}
+
+}

@@ -1,0 +1,212 @@
+/**
+ * 
+ */
+
+document.addEventListener("DOMContentLoaded", function () {
+	
+
+	// 현재 시간 기준 이전의 버튼 비활성화
+	const now = new Date();
+	const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+	
+	// 모든 버튼을 순회하며 현재 시간과 비교
+	document.querySelectorAll("#btn-time").forEach(button => {
+	    const timeRange = button.getAttribute("data-time-range"); // "08:00~09:00"
+	    const startTime = timeRange.split("~")[0]; // "08:00" (시작 시간만 가져옴)
+	
+	    if (startTime < currentTime) {
+	        // 시작 시간이 현재 시간보다 이르면 버튼을 비활성화
+	        button.disabled = true;
+	        button.classList.remove("btn-outline-primary");
+	        button.classList.add("btn-danger");
+	        button.innerHTML = `${timeRange}<br>(시간 경과)`; // 텍스트도 변경
+	    }
+	});
+
+
+
+	 
+   // 오늘 날짜 구하기
+        function getFormattedDate() {
+            const today = new Date(); //오늘 날짜 구하기 , Tue Dec 10/ 2024 15:09:33 GMT+0900 (한국 표준시)
+			console.log(today)
+            const year = today.getFullYear();
+			//console.log(year) -->> 2024
+            const month = String(today.getMonth() + 1).padStart(2, "0");  
+			//console.log(today.getMonth()) -->> 0부터 시작하기때문에 오늘 날짜에서 월을 가져온다음에 +1을 꼭 해주기
+			//today.getMonth() 이것만하면 11만 나옴
+			//padStart(2, "0"); 는 yyyy-mm-dd 의 형식을 맞추기위해 최소 2자리부터 시작하고 한자리면 거기에 0을 붙여서
+			//형식에 맞게 맞춘것
+            const date = String(today.getDate()).padStart(2, "0");
+            
+            // 요일 구하기
+            const days = ["일", "월", "화", "수", "목", "금", "토"];
+            const day = days[today.getDay()]; //이렇게하면 0,1,2,3,4,5,6 이 나오는데 일~토까지 순서대로 매치되서 나오게되는것
+            console.log(today.getDay())
+
+			//2024-12-10(화) 이렇게 나오게 하려고 맞춘것
+            return `${year}-${month}-${date}(${day})`;
+	
+        }
+
+        // 오늘 날짜를 기본값으로 selected-date에 표시되는 것,
+        document.getElementById("selected-date").innerText = getFormattedDate();
+
+         // 선택된 시간을 저장할 배열(선택 회차에,,,,넣어주는거야,,)
+   		 const selectedTimes = new Set();
+		 const selectedTimeCodes = new Set();
+    // btn-time 예약하기 버튼 클릭하면,,,
+	    const buttons = document.querySelectorAll("#btn-time");
+	    buttons.forEach(button => {
+	       button.addEventListener("click", function () {
+	            const selectedTime =this.getAttribute("data-time-range"); 
+
+				const timeCodes = this.getAttribute("data-time-code"); // timeCode 가져오기
+	            
+				if (selectedTimes.has(selectedTime)&&selectedTimeCodes.has(timeCodes)) {
+	                // 이미 선택된 경우 제거
+	                selectedTimes.delete(selectedTime);
+					selectedTimeCodes.delete(timeCodes); // timeCode도 제거
+	                this.classList.remove("btn-success"); // 선택 상태 표시 제거
+	            } else {
+	                // 새로 선택 추가 (최대 3개 제한)
+	                if (selectedTimes.size >= 3) {
+	                    alert("최대 3개의 시간만 선택할 수 있습니다.");
+	                    return;
+	                }
+	                selectedTimes.add(selectedTime);
+					selectedTimeCodes.add(timeCodes); // timeCode 추가
+	                this.classList.add("btn-success"); // 선택 상태 표시
+	         	 }
+
+ 		console.log("Selected Times:", selectedTimes);
+        console.log("Selected Time Codes:", Array.from(selectedTimeCodes));
+
+			  // 선택된 시간 업데이트 (버튼 순서대로 정렬)
+             const sortedTimes = Array.from(buttons)
+			    .filter(button => selectedTimes.has(button.getAttribute("data-time-range"))) // 선택된 시간 필터링
+			    .map(button => button.getAttribute("data-time-range")); // 버튼 순서대로 시간 추출
+
+			//시간대, 시간대, 시간대 이렇게 나오게 하려고,,,
+            document.getElementById("selected-times").innerText = sortedTimes.join(", ");
+
+            // 예약 버튼 활성화/비활성화
+            document.getElementById("modal-button").disabled = selectedTimes.size === 0;
+        });
+    });
+
+	
+	//여기는 모달창 띄우는것..
+	const modalButton = document.getElementById("modal-button");
+    const modalSelectedDate = document.getElementById("modal-selected-date");
+    const modalSelectedTimes = document.getElementById("modal-selected-times");
+ 	const modalRoomHosu = document.getElementById("modal-room-hosu");
+    const modalRoomName = document.getElementById("modal-room-name");
+    const modalRoomNum = document.getElementById("modal-room-num");
+    const modalRoomDetail = document.getElementById("modal-room-detail");
+	const modalFacilityImage = document.getElementById("modal-facility-image"); // 모달 이미지 태그
+
+
+    // "룸 상세정보에서 예약하기" 버튼 클릭 시 모달에 데이터 업데이트
+    modalButton.addEventListener("click", function () {
+		
+		//모달에 찍으려고 다 값을 들고오기
+        const selectedDate = document.getElementById("selected-date").innerText;
+        const selectedTimes = document.getElementById("selected-times").innerText;
+		const roomHosu = document.getElementById("roomHosu").innerText;
+		const roomName = document.getElementById("roomName").innerText;
+		const roomNum = document.getElementById("roomNum").innerText;
+		const roomDetail = document.getElementById("roomDetail").innerText;
+		const roomImageSrc = document.querySelector(".facility-image img").src; // 시설 이미지
+
+		
+        // 선택된 데이터를 모달에 표시 --> 모달에 들어오는 친구들
+        modalSelectedDate.innerText = selectedDate;
+        modalSelectedTimes.innerText = selectedTimes;
+		modalRoomHosu.innerText = roomHosu;
+		modalRoomName.innerText = roomName;
+		modalRoomNum.innerText = roomNum;
+		modalRoomDetail.innerText = roomDetail;
+		modalFacilityImage.src = roomImageSrc; // 이미지 업데이트
+		
+		
+		
+    });
+
+	// id가 "confirm-reservation"인 버튼을 가져옴
+	const confirmButton = document.getElementById("confirm-reservation");
+	
+	// 기존 이벤트 리스너 제거
+	// handleReservation 이건 이벤트 핸들러 함수인데 여기서는 예약버튼을 클릭하면 실행되는거
+	confirmButton.removeEventListener("click", handleReservation);
+	
+	// 새로운 이벤트 리스너 등록
+	confirmButton.addEventListener("click", handleReservation);
+	
+	function handleReservation() {
+	    // 요 위에 버튼을 
+	    confirmButton.disabled = true; 
+		//id가 basicModal인 모달 창(팝업 창)을 가져옴
+	    const modalElement = document.querySelector("#basicModal"); 
+		//modalInstance는 모달 창의 상태를 조작할 수 있는 객체를 가져옴, 창닫기/열기 이런것
+	    const modalInstance = bootstrap.Modal.getInstance(modalElement); 
+	    
+		//왜냐면 이걸 컨트롤러에게 보내줘야대서 담아주기
+		const roomId = document.getElementById("hiddenRoodId").value; //id를 갸져옴
+	    const hosu = modalRoomHosu.innerText; // 가져온 값을 찍어
+	    const name = modalRoomName.innerText;
+	    const roomCause = document.getElementById("modal-roomReser-detail").value;
+	    const empId = confirmButton.getAttribute('data-id');
+	    const url2 = confirmButton.getAttribute('data-url');
+	
+		//서버로 보낼 데이터
+	    const data = {
+	        roomId: roomId,
+	        hosu: hosu,
+	        name: name,
+	        timeRanges: Array.from(selectedTimes), //set 객체를 배열로 변환
+	        timeCodes: Array.from(selectedTimeCodes),
+	        reserCause: roomCause,
+	        empId: empId
+	    };
+	
+	    console.log("전송 데이터:", data);
+	
+	    fetch(url2, {
+	        method: "POST",
+	        headers: {
+	            "Content-Type": "application/json",
+	        },
+	        body: JSON.stringify(data),
+	    })
+	    .then(response => {
+	        if (!response.ok) {
+	            throw new Error(`HTTP Error: ${response.status}`);
+	        }
+	        return response.json();
+	    })
+	    .then(responseData => {
+	        console.log("응답 데이터:", responseData);
+	        alert("예약이 성공적으로 완료되었습니다!");
+	        if (modalInstance) {
+	            modalInstance.hide(); // 모달 닫기
+	        }
+	        window.location.reload(); // 페이지 새로고침
+	    })
+	    .catch(error => {
+	        console.error("Error 발생:", error);
+	        alert("예약에 실패했습니다. 다시 시도해주세요.");
+	    })
+	    .finally(() => {
+	        //다시 버튼을 누를 수 있도록 활성화
+	        confirmButton.disabled = false; 
+	    });
+	}
+
+
+
+});
+
+
+
+

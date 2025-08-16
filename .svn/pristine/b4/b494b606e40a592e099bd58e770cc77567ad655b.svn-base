@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.attendance.dao.AttendanceHistoryMapper">
+	
+	<sql id="searchAH">
+    <where>
+  	
+  
+  	
+	<if	test="variousCondition.department != null and variousCondition.department != ''">
+		AND D.DEPART_CODE = #{variousCondition.department}
+	</if>
+	
+	<if	test="variousCondition.position != null and variousCondition.position != ''">
+		AND A.POSI_NAME = #{variousCondition.position}
+	</if>
+	
+        <!-- 검색어 조건 -->
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.searchWord)">
+            AND (INSTR(E.EMP_NAME, #{variousCondition.searchWord}) > 0)
+        </if>
+        <!-- 입사 시작일 조건 -->
+        <if test="variousCondition.startDate != null and variousCondition.startDate != ''">
+            AND TO_DATE(A.ATTHIS_ID,'YYYY-MM-DD') >= #{variousCondition.startDate}
+        </if>
+        <!-- 입사 종료일 조건 -->
+        <if test="variousCondition.endDate != null and variousCondition.endDate != ''">
+            <![CDATA[ 
+            AND TO_DATE(A.ATTHIS_ID,'YYYY-MM-DD') <= #{variousCondition.endDate}
+            ]]>
+        </if>
+    </where>
+</sql>
+	
+	
+	
+	
+	
+	
+	
+<resultMap type="AttendanceHistoryVO" id="attendanceVO" autoMapping="true"> 
+	<association property="emp" autoMapping="true"></association>
+</resultMap>
+
+<select id="selectHrTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM ATTENDANCE_HISTORY
+		<include refid="searchAH" />
+</select>
+
+
+<select id="selectAllAttendanceHistoryList" resultMap="attendanceVO">
+SELECT BB.*
+  FROM(
+	SELECT ROWNUM RNUM, AA.*
+	  FROM (
+		SELECT 
+		    A.ATTHIS_ID
+		  , E.EMP_ID 
+		  , E.EMP_NAME
+		  , (SELECT C.CODE_COMMENT
+		       FROM COMMON_CODE C 
+		      WHERE 1=1 
+		        AND C.TABLE_NAME='EMPLOYEE'
+		        AND C.CODE_TYPE='직급'
+		        AND C.CODE = E.POSI_ID) AS POSI_NAME 
+		    , (SELECT D.DEPART_NAME
+		         FROM DEPARTMENT D 
+		        WHERE 1=1 
+		          AND E.DEPART_CODE = D.DEPART_CODE) AS DEPART_NAME
+		    , A.HAHIS_TIME 
+		    , A.HLEAVE_TIME 
+		    , A.ATTHIS_OVER
+		    , A.ATTHIS_OVER_YN 
+		    , (SELECT C.CODE_COMMENT
+		         FROM COMMON_CODE C
+		        WHERE 1=1 
+		          AND C.TABLE_NAME='ATTENDANCE_HISTORY'
+		          AND C.CODE_TYPE='출근상태'
+		          AND C.CODE = A.ATTSTA_ID_IN) AS ATTSTA_ID_IN
+		    , (SELECT C.CODE_COMMENT
+		         FROM COMMON_CODE C 
+		        WHERE 1=1
+		          AND C.TABLE_NAME='ATTENDANCE_HISTORY'
+		          AND C.CODE_TYPE = '퇴근상태'
+		          AND C.CODE = A.ATTSTA_ID_OUT) AS ATTSTA_ID_OUT
+		  FROM ATTENDANCE_HISTORY A INNER JOIN EMPLOYEE E ON A.EMP_ID = E.EMP_ID
+		    <include refid="searchAH"></include>
+		  ORDER BY A.ATTHIS_ID ASC
+  ) AA
+) BB
+<![CDATA[
+        WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+    ]]>
+	</select>
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,13 @@
+<%--
+  Created by IntelliJ IDEA.
+  User: PC-14
+  Date: 2024-12-11
+  Time: 오후 8:06
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+
+<body>
+<h1>안녕 나는 전자결재 상세조회임</h1>
+</body>
+

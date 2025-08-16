@@ -1,0 +1,17 @@
+package kr.or.ddit.approval.vo;
+
+import lombok.Data;
+
+@Data
+public class ApprovalDocumentVO {
+
+    private String docId;
+    private String docTitle;
+    private String docContent;
+    private String docPreserve;
+    private String docStatus;
+    private String allowDelegation;
+    private String empId;
+    private String apprlineId;
+    private String apprformId;
+}

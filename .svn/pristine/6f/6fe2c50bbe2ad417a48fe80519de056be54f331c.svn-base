@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.account.dao.AccountMapper">
+
+<resultMap type="AccountVO" id="accountMap" autoMapping="true">
+	<association property="employee" autoMapping="true"/>
+</resultMap>
+
+<select id="selectAccount" resultType="AccountVO">
+	SELECT 
+	    ACCOUNT_MAIL
+	    , ACCOUNT_PASS
+	    , ACCOUNT_YN
+	FROM ACCOUNT
+	WHERE ACCOUNT_MAIL=#{accountMail}
+</select>
+
+<select id="selectAccountList" resultType="AccountVO">
+	SELECT 
+	    ACCOUNT_MAIL
+	    , ACCOUNT_PASS
+	    , ACCOUNT_YN
+	FROM ACCOUNT
+</select>
+
+<select id="selectAccountExist" resultMap="accountMap" parameterType="AccountVO">
+	SELECT 
+	    ACCOUNT_MAIL
+	    , ACCOUNT_PASS
+	    , ACCOUNT_YN
+	FROM ACCOUNT
+	WHERE ACCOUNT_MAIL = #{accountMail} AND ACCOUNT_PASS = #{accountPass}
+</select>
+
+
+<!-- 회원 INSERT는 관리자만 진행함, 비밀번호는 초기비밀번호로 일괄등록되기 때문에 1234로 고정 -->
+<insert id="insertAccount">
+	INSERT INTO ACCOUNT(ACCOUNT_MAIL, ACCOUNT_PASS, ACCOUNT_YN)
+	VALUES(
+	    #{accountMail}
+	    ,'1234'
+	    ,'Y'
+	)
+</insert>
+
+<update id="updateAccount">
+	UPDATE ACCOUNT
+	SET 
+		<trim prefixOverrides=",">
+			<if test="accountMail neq null and accountMail.length gt 0">
+				, ACCOUNT_MAIL=#{accountMail,jdbcType=VARCHAR}
+			</if>
+			<if test="accountPass neq null and accountPass.length gt 0">
+				, ACCOUNT_PASS=#{accountPass,jdbcType=VARCHAR}
+			</if>
+			<if test="accountYn neq null and accountYn.length gt 0">
+				, ACCOUNT_YN=#{accountYn,jdbcType=VARCHAR}
+			</if>
+		</trim>
+	WHERE ACCOUNT_MAIL=#{accountMail}
+</update>
+
+<update id="updateStatusAccount">
+	UPDATE ACCOUNT
+	SET ACCOUNT_YN='N'
+	WHERE ACCOUNT_MAIL=#{accountMail}
+</update>
+
+<delete id="deleteAccount">
+
+</delete>
+
+</mapper>

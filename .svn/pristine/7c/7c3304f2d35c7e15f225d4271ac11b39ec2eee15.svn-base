@@ -1,0 +1,33 @@
+package kr.or.ddit.commons.websocket;
+
+import java.security.Principal;
+import java.util.Map;
+
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
+
+import kr.or.ddit.security.AccountVOWrapper;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+public class CustomHandshakeHandler extends DefaultHandshakeHandler {
+	 @Override
+	protected Principal determineUser(
+        ServerHttpRequest request,
+        WebSocketHandler wsHandler,
+        Map<String, Object> attributes
+    ) {
+		 // LoginHandshakeInterceptor에서 설정된 empId를 가져옴
+	        String empId = (String) attributes.get("username");
+	        if (empId == null) {
+	            throw new IllegalStateException("사원번호(username)가 WebSocket attributes에 없습니다.");
+	        }
+	        log.info("empId>>{}",empId);
+	        // CustomPrincipal 생성
+	        return new CustomPrincipal(empId);
+	    }
+
+}

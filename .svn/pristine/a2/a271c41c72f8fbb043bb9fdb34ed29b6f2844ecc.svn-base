@@ -1,0 +1,54 @@
+package kr.or.ddit.gmail.service;
+
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.commons.paging.PaginationInfo;
+import kr.or.ddit.gmail.dao.MailImportantMapper;
+import kr.or.ddit.gmail.vo.MailImportantVO;
+@Service
+public class MailImportantServiceImpl implements MailImportantService {
+	@Inject
+	private MailImportantMapper mapper;
+
+	@Override
+	public String readLastApiCallTime(String empMail) {
+		// TODO Auto-generated method stub
+		return mapper.selectLastApiCallTime(empMail);
+	}
+
+	@Override
+	public List<MailImportantVO> readImportantMailList(PaginationInfo paging) {
+		int totalRecord = mapper.selectTotalRecord(paging);
+		paging.setTotalRecord(totalRecord);
+		return mapper.selectImportantMailList(paging);
+	}
+
+	@Override
+	public MailImportantVO readImportantMailDetail(String messageId) {
+		// TODO Auto-generated method stub
+		return mapper.selectImportantMailDetail(messageId);
+	}
+
+	@Override
+	public int readImportantMailExist(MailImportantVO importantMail) {
+		// TODO Auto-generated method stub
+		return mapper.selectImportantMailExist(importantMail);
+	}
+
+	@Override
+	public int createImportantMail(MailImportantVO importantMail) {
+		// TODO Auto-generated method stub
+		return mapper.insertImportantMail(importantMail);
+	}
+
+	@Override
+	public int deleteImportantMail(String mailMessageid) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+}

@@ -1,0 +1,163 @@
+package kr.or.ddit.project.controller;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import kr.or.ddit.account.vo.AccountVO;
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.commons.validate.InsertGroup;
+import kr.or.ddit.employee.vo.EmployeeVO;
+import kr.or.ddit.project.service.ProjectService;
+import kr.or.ddit.project.vo.ProjectMemberVO;
+import kr.or.ddit.project.vo.ProjectTaskVO;
+import kr.or.ddit.project.vo.ProjectVO;
+import kr.or.ddit.project.vo.TaskHistoryVO;
+import kr.or.ddit.security.AccountVOWrapper;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/{companyId}/project")
+public class ProjectInsertController {
+	public static final String MODELNAME = "newProject";
+	
+	@Autowired
+	private ProjectService service;
+
+	@ModelAttribute(MODELNAME) 
+	public ProjectVO project() {
+		return new ProjectVO();
+	}
+	
+	@GetMapping("/form")
+	public String form(@ModelAttribute(MODELNAME) ProjectVO project) {
+		return "project/projectForm";
+	}
+	
+	@PostMapping("/new")
+	public String createProject(
+			@PathVariable("companyId") String companyId,
+			@Validated(InsertGroup.class) @ModelAttribute(MODELNAME) ProjectVO project,
+			BindingResult errors,
+			Authentication authentication,
+			RedirectAttributes redirectAttributes
+		) {
+		
+		redirectAttributes.addFlashAttribute(MODELNAME, project);
+		
+		String lvn = null;
+		if(!errors.hasErrors()) {
+            AccountVOWrapper principal = (AccountVOWrapper) authentication.getPrincipal();
+            AccountVO account = principal.getAccount();
+
+            EmployeeVO myEmp = (EmployeeVO)account;
+            if (myEmp != null) {
+                project.setProjLastup(myEmp.getEmpId()); // EmployeeVO의 empId 필드 값 설정
+            } else {
+                redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
+                return "redirect:/{companyId}/login"; // 로그인 페이지로 리다이렉트
+            }
+            ServiceResult result = service.createProject(project);
+            switch (result) {
+            	case OK:
+            		List<ProjectMemberVO> list = new ArrayList<ProjectMemberVO>();
+            		ProjectMemberVO member = new ProjectMemberVO();
+            		String projId = service.readProjectNoProjId(project);
+            		member.setProjId(projId);
+            		member.setEmpId(myEmp.getEmpId());
+            		member.setProjectRolenm("담당자");
+            		member.setJoinDate(project.getProjSdate());
+            		member.setLeaveDate(project.getProjEdate());
+            		list.add(member);
+            		service.insertProjectMember(list);
+            		lvn = "redirect:/"+companyId+"/project";
+            		break;
+            	
+            	case FAIL:
+            		lvn = "redirect:/"+companyId+"/project/form";
+            	    redirectAttributes.addFlashAttribute("message", "서버 오류입니다. 다시 시도해주세요.");
+                    break;
+                    
+                default:
+                    lvn = "redirect:/" + companyId + "/project/form";
+                    redirectAttributes.addFlashAttribute("message", "알 수 없는 오류가 발생했습니다.");
+                    break;
+            }
+		}else{
+            String errAttrName = BindingResult.MODEL_KEY_PREFIX + MODELNAME;
+            redirectAttributes.addFlashAttribute(errAttrName, errors);
+            lvn = "redirect:/" + companyId + "/project/form";
+		}
+		
+		return lvn;
+	}
+	
+	@PostMapping("/{projId}/addMembers")
+	public ResponseEntity<?> insertProjectMember(
+	        @RequestBody Map<String, List<ProjectMemberVO>> requestBody,
+	        @PathVariable("projId") String projId) {
+	    
+	    // Map에서 members 리스트 추출
+	    List<ProjectMemberVO> projectMemberList = requestBody.get("members");
+	    
+	    for (ProjectMemberVO member : projectMemberList) {
+	        member.setProjId(projId);
+	    }
+	    
+	    service.insertProjectMember(projectMemberList);
+	    
+	    return ResponseEntity.ok().build();
+	}
+	
+	
+	@PostMapping("/{projId}/addTask")
+	public ResponseEntity<?> insertProjectTask(
+			@PathVariable("projId") String projId,
+			ProjectTaskVO projectTaskVO,
+			Authentication authentication
+			){
+        AccountVOWrapper principal = (AccountVOWrapper) authentication.getPrincipal();
+        AccountVO account = principal.getAccount();
+
+        EmployeeVO myEmp = (EmployeeVO)account;
+		log.info("{}", projectTaskVO);
+		ServiceResult result = service.insertProjectTask(projectTaskVO);
+		if(result.equals(ServiceResult.OK)){
+			ProjectTaskVO projectTask = service.readTaskId(projectTaskVO);
+			TaskHistoryVO taskHistoryVO = new TaskHistoryVO();
+			taskHistoryVO.setEmpId(myEmp.getEmpId());
+			taskHistoryVO.setTaskId(projectTask.getTaskId());
+			taskHistoryVO.setTaskMethod("생성");
+			taskHistoryVO.setTaskDate(LocalDateTime.now());
+			taskHistoryVO.setTaskTitle(projectTaskVO.getTaskNm());
+			taskHistoryVO.setProjId(projId);
+			ServiceResult taskResult = service.insertTaskHistory(taskHistoryVO);
+			if(taskResult.equals(ServiceResult.OK)) {
+				return ResponseEntity.ok().build();
+			}else {
+				return ResponseEntity.badRequest().build();
+			}
+		}else {
+			return ResponseEntity.badRequest().build();
+		}
+		
+	}
+	
+	
+}

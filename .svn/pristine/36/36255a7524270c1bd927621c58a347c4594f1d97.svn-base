@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.attendance.dao.AttendanceHistoryMapper">
+
+	<resultMap type="AttendanceHistoryVO" id="attendanceHistoryMap" autoMapping="true">
+		<association property="attendStatus" javaType="AttendStatusVO" autoMapping="true" />
+	</resultMap>
+	
+	<sql id="searchListFrag">
+		<where>
+			<if test="variousCondition.empId != null">
+				EMP_ID = #{variousCondition.empId}
+			</if>
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.startDate)">
+	            	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.endDate)">
+	                AND(
+	                	ATTENDANCE_HISTORY.ATTHIS_ID BETWEEN #{variousCondition.startDate} 
+	                		AND #{variousCondition.endDate}
+	                )               
+	            	</if>
+	        	</if>
+        	</where>
+	</sql>
+
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM ATTENDANCE_HISTORY
+		<include refid="searchListFrag" />
+	</select>
+	
+	<select id="selectAttendanceHistoryList" resultMap="attendanceHistoryMap">
+		SELECT B.*
+		FROM 
+		(
+			SELECT ROWNUM RNUM, A.*
+			FROM 
+			(
+				SELECT 
+				    ATTENDANCE_HISTORY.ATTHIS_ID,
+				    ATTENDANCE_HISTORY.EMP_ID,
+				    ATTENDANCE_HISTORY.HAHIS_TIME,
+				    ATTENDANCE_HISTORY.HLEAVE_TIME,
+				    ATTENDANCE_HISTORY.ATTHIS_CAUSE,
+				    ATTENDANCE_HISTORY.ATTHIS_OVER_YN,
+				    ATTENDANCE_HISTORY.ATTHIS_OVER,
+				    ATTENDANCE_HISTORY.ATTEND_ID,
+				    ATTENDANCE_HISTORY.ATTSTA_ID_IN,
+				    ATTEND_STATUS_IN.ATTSTA_NM AS IN_STATUS_NAME,
+				    ATTENDANCE_HISTORY.ATTSTA_ID_OUT,
+				    ATTEND_STATUS_OUT.ATTSTA_NM AS OUT_STATUS_NAME
+				FROM 
+				    ATTENDANCE_HISTORY
+				LEFT OUTER JOIN 
+				    ATTEND_STATUS ATTEND_STATUS_IN
+				        ON ATTENDANCE_HISTORY.ATTSTA_ID_IN = ATTEND_STATUS_IN.ATTSTA_ID
+				LEFT OUTER JOIN 
+				    ATTEND_STATUS ATTEND_STATUS_OUT
+				        ON ATTENDANCE_HISTORY.ATTSTA_ID_OUT = ATTEND_STATUS_OUT.ATTSTA_ID
+				<include refid="searchListFrag" />
+			) A
+		)B
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+
+</mapper>

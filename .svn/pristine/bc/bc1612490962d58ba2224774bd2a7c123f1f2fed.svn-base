@@ -1,0 +1,385 @@
+/**
+ * 
+ */
+document.addEventListener("DOMContentLoaded", ()=>{
+	const fileInput = document.getElementById("fileInput");
+	const downloadBtn = document.getElementById("downloadBtn");
+	const makefolderBtn = document.getElementById("makefolderBtn");
+ 	const deleteBtn = document.getElementById("deleteBtn");
+    const modalElement = document.getElementById('smallModal');
+
+    // Bootstrap Modal 인스턴스 생성
+    const modalInstance = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+    
+
+    deleteBtn.addEventListener("click", async (e)=>{
+        var selected = [];
+		
+		var selectedFolders = document.querySelectorAll('input[name="folder"]:checked');
+		
+        let filterAns = await deleteCheckboxFilter(selectedFolders);
+
+        if(filterAns == true){
+           var selectedFiles = document.querySelectorAll('input[name="file"]:checked');
+
+           selectedFolders.forEach(function(checkbox){
+                selected.push((currentPath+path).trim()+checkbox.value);
+           })
+
+           selectedFiles.forEach(function(checkbox){
+               selected.push((currentPath+path).trim()+checkbox.value);
+           });
+           
+           console.log(selected);
+        }
+    });
+    
+    function deleteCheckboxFilter(selectedFolders) {
+    if (selectedFolders.length !== 0) {
+        return Swal.fire({
+            title: "폴더 삭제",
+            html: `선택된 항목 중 폴더가 선택되어있습니다.<br> 해당 폴더를 삭제하시겠습니까?<br>삭제시, 폴더 내부의 모든 정보가 사라집니다.`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: '승인',
+            cancelButtonText: '취소',
+            confirmButtonColor: 'blue',
+            cancelButtonColor: 'red',
+            reverseButtons: true,
+        }).then(result => {
+            if (result.isConfirmed) {
+                return true;
+            } else {
+                Swal.fire("취소 완료", "취소 버튼을 눌렀습니다.", "error");
+                return false;
+            }
+        });
+    } else {
+        return Promise.resolve(true); // 폴더가 선택되지 않으면 바로 true 반환
+    }
+}
+
+   
+    makefolderBtn.addEventListener("click", (e)=>{
+        const folderName = document.getElementById("folderName").value;
+        
+        let answer = spaceFilter(folderName);
+        
+        const dirName = (path+folderName).trim();
+        
+        if(answer == true){
+             // 모달 닫기
+            modalInstance.hide();
+
+            fetch(`${contextPath}/${companyId}/perCloud/makeDir`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `dirName=${encodeURIComponent(dirName)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    Swal.fire({
+                        title: "새 폴더 생성하기",
+                        text: "클라우드에서 새로운 폴더를 생성던 중 문제가 발생했습니다.",
+                        icon: "error"
+                    });
+                    return;
+                }else{
+                    Swal.fire({
+                        title: "새 폴더 생성하기",
+                        text: "클라우드에서 새로운 폴더를 생성던 중 문제가 발생했습니다.",
+                        icon: "success",
+                        timer:2000,
+                        showConfirmButton : false
+                    });// 성공 메시지 표시
+        
+                    // 성공 시 페이지 새로고침 또는 다른 작업 수행
+                    setTimeout(() => {
+                         location.reload();
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+        }else{
+            Swal.fire({
+                title: "새 폴더 생성하기",
+                html: "클라우드에서 새로운 폴더를 생성던 중 문제가 발생했습니다.<br>해당 기능에 오류가 반복적으로 발생한다면 문의 부탁드립니다. ",
+                icon: "error"
+            });
+        }
+    });
+
+    function spaceFilter(folderName){
+		 // 폴더명을 기입 안했을때.
+         if (folderName.length === 0) {
+            Swal.fire({
+                title: "폴더 생성 실패",
+                html: `폴더를 생성할 수 없습니다. <br>생성하실 폴더명을 재입력 후 다시 요청해주세요.`,
+                icon: "error"
+            });
+            return false;
+        }
+    
+        // whitespace - 공백 체크
+        if (/\s/.test(folderName)) {
+            Swal.fire({
+                title: "폴더 생성 실패",
+                html: `폴더명을 입력할 때 띄어쓰기를 포함할 수 없습니다. <br>다시 입력해주세요.`,
+                icon: "error"
+            });
+            return false;
+        }
+    
+        // All validations passed
+        return true;
+    }
+	
+
+
+	downloadBtn.addEventListener("click", (e)=>{
+		var selected = [];
+		
+		var selectedFolders = document.querySelectorAll('input[name="folder"]:checked');
+		
+        let filterAns = downLoadCheckboxFilter(selectedFolders);
+           
+        if(filterAns == true){
+
+           var selectedFiles = document.querySelectorAll('input[name="file"]:checked');
+           
+           selectedFiles.forEach(function(checkbox){
+               selected.push((currentPath+path).trim()+checkbox.value);
+           });
+        }
+
+            // fetch로 데이터 전송
+    if (selected.length > 1) {
+        fetch(`${contextPath}/${companyId}/perCloud/downloadMultiple`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                files: selected
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            } else {
+                throw new Error("Download failed");
+            }
+        })
+        .then(blob => {
+            // ZIP 파일 다운로드 처리
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "files.zip"; // 다운로드 파일 이름
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        })
+        .catch(error => {
+            Swal.fire({
+                title: "다운로드 실패",
+                html: "파일을 다운로드가 되지 않았습니다.<br> 해당 기능이 동작하지 않는경우 문의글을 작성해주세요.",
+                icon: "error"
+            })
+        });
+    } else if(selected.length == 1){
+        fetch(`${contextPath}/${companyId}/perCloud/downloadSingle`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                file: selected[0]
+            })
+        })
+        .then(resp => {
+            if (resp.ok) {
+                return resp.blob();
+            } else {
+                throw new Error("Download failed");
+            }
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+    
+            // 파일 이름 설정
+            const fileName = selected[0].split("/").pop();
+            a.download = fileName;
+            
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        })
+        .catch(error => {
+            Swal.fire({
+                title: "다운로드 실패",
+                html: "파일 다운로드 중 문제가 발생했습니다.<br>문의글을 작성해주세요.",
+                icon: "error"
+            });
+            console.error("Error:", error);
+        });
+    
+    }else{
+        Swal.fire({
+	        title: "다운로드 실패",
+	        html: `폴더는 다운로드할 수 없습니다. <br>다운로드할 파일을 선택 후 다시 요청해주세요.`,
+	        icon: "error"
+   		});
+    }
+		
+	});
+	
+	function downLoadCheckboxFilter(selectedFolders){
+		if(selectedFolders.length !== 0){
+			Swal.fire({
+                title: "다운로드 실패",
+                html: `폴더는 다운로드할 수 없습니다. <br>다운로드할 파일을 선택 후 다시 요청해주세요.`,
+
+                icon: "error"
+           	});
+            return false;
+		}else{
+            return true;
+        }
+	}
+	
+	fileInput.addEventListener("change", async () => {
+		const files = fileInput.files;
+
+        if (files.length === 0) {
+			Swal.fire({
+                title: "파일 선택",
+                html: "파일이 선택되지 않았습니다.<br> 다운로드할 파일을 선택 후 다시 요청해주세요.",
+                icon: "error"
+           	});
+            return;
+        }
+		
+        const formData = new FormData();
+        for (const file of files) {
+            formData.append("files", file); // 서버와 통신할 필드 이름
+        }
+		
+		// 폺더구조 구현해야됨..
+		formData.append("folderName", path);
+		
+        try {
+            const resp = await fetch(`${contextPath}/${companyId}/perCloud/upload`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (resp.ok) {
+                 Swal.fire({
+	                title: "업로드 성공",
+	                text: "클라우드에 업로드가 완료되었습니다.",
+	                icon: "success",
+					timer:2000,
+					showConfirmButton : false
+	            });
+
+            // 성공 시 페이지 새로고침 또는 다른 작업 수행
+	            setTimeout(() => {
+	                 location.reload();
+	            }, 2000);
+
+            } else {
+				Swal.fire({
+	                title: "업로드 실패",
+	                text: "업로드 중 문제가 발생했습니다.",
+	                icon: "error"
+	            });
+            }
+        } catch (error) {
+			console.log(error);
+        }
+	});
+	
+	// allCheck 체크박스 클릭 이벤트
+	document.getElementById('allCheck').addEventListener('change', function() {
+	    const allChecked = this.checked; // 현재 allCheck의 체크 상태를 가져옴
+	    const checkboxes = document.querySelectorAll('#cloudStorage tbody input[type="checkbox"]'); // 테이블 내 체크박스 선택
+	
+	    // 모든 체크박스의 상태를 allCheck의 상태와 동일하게 설정
+	    checkboxes.forEach(checkbox => {
+	        checkbox.checked = allChecked;
+	    });
+	});
+});// DOMContentLoaded
+
+function navigateToFolder(folderName){
+	path = `${path}${folderName}/`;
+	console.log(currentPath);
+	console.log(path);
+	fetch(`${contextPath}/${companyId}/perCloud`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `path=${encodeURIComponent(path)}`
+    })
+    .then(response => {
+        if (!response.ok) {
+            Swal.fire({
+                title: "폴더 불러오기",
+                text: "클라우드에서 해당 폴더를 불러오던 중 문제가 발생했습니다.",
+                icon: "error"
+            });
+        }
+        return response.json(); // JSON 데이터로 변환
+    })
+    .then(data => {
+        updateTable(data.folders, data.files); // 테이블 업데이트
+    })
+    .catch(error => {
+        alert(error.message);
+    });
+}
+
+function updateTable(folders, files) {
+    const tableBody = document.querySelector("#cloudStorage tbody");
+    tableBody.innerHTML = ""; // 기존 테이블 내용 비우기
+    document.getElementById('allCheck').checked = false;
+    // 폴더 데이터 추가
+    folders.forEach(folder => {
+        const row = `
+             <tr>
+            	<td>
+            		<input type="checkbox" name="folder" value="${folder.name}">
+            	</td>
+                <td>${folder.type}</td>
+                <td>
+                	<span ondblclick="navigateToFolder('${folder.name}')">${folder.name}</span>
+                </td>
+                <td>${folder.size}</td>
+                <td>${folder.lastModified}</td>
+            </tr>`;
+        tableBody.insertAdjacentHTML("beforeend", row);
+    });
+
+    // 파일 데이터 추가
+    files.forEach(file => {
+        const row = `
+            <tr>
+				<td>
+            		<input type="checkbox" name="file" value="${file.name}">
+            	</td>
+                <td>${file.type}</td>
+                <td>${file.name}</td>
+                <td>${file.size}</td>
+                <td>${file.lastModified}</td>
+            </tr>`;
+        tableBody.insertAdjacentHTML("beforeend", row);
+    });
+}

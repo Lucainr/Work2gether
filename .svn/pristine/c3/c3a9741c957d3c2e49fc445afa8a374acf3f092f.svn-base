@@ -1,0 +1,90 @@
+package kr.or.ddit.gmail.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.commons.paging.PaginationInfo;
+import kr.or.ddit.commons.paging.renderer.DefaultPaginationRenderer;
+import kr.or.ddit.commons.paging.renderer.PaginationRenderer;
+import kr.or.ddit.employee.vo.EmployeeVO;
+import kr.or.ddit.gmail.service.MailDraftService;
+import kr.or.ddit.gmail.vo.MailDraftVO;
+import kr.or.ddit.gmail.vo.MailReceivedVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/{companyId}/mail/draft")
+public class DraftMailController {
+	@Inject
+	private MailDraftService draftService;
+	
+	@GetMapping
+	public String getDraftMailListPage(
+			@PathVariable("companyId") String companyId,
+			Optional<Integer> page,
+			@RequestParam(value = "type", required = false) String type,
+			@RequestParam(value = "value", required = false) String value,
+			HttpSession session,
+			Model model
+	) {
+		EmployeeVO myEmp = (EmployeeVO) session.getAttribute("myEmp");
+
+		PaginationInfo paging = new PaginationInfo();
+		paging.setCurrentPage(page.orElse(1));
+		Map<String, Object> variousCondition = new HashMap<>();
+		variousCondition.put("empMail", myEmp.getEmpMail());
+
+		if (!(StringUtils.isBlank(type) && StringUtils.isBlank(value))) {
+			variousCondition.put("type", type);
+			variousCondition.put("value", value);
+			model.addAttribute("type", type);
+			model.addAttribute("value", value);
+		}
+
+		paging.setVariousCondition(variousCondition);
+
+		List<MailDraftVO> receivedMailList = draftService.readDraftMailList(paging);
+
+		PaginationRenderer renderer = new DefaultPaginationRenderer();
+		String pagingHtml = renderer.renderPagination(paging, "fnPaging");
+
+		model.addAttribute("list", receivedMailList);
+		model.addAttribute("pagingHtml", pagingHtml);
+		model.addAttribute("variousCondition", variousCondition);
+		
+		return "mail/mailDraftList";
+	}
+	
+	@GetMapping("{mailMessageId}")
+	@ResponseBody
+	public ResponseEntity<MailDraftVO> getDraftMailDetail(
+			@PathVariable("mailMessageId") String mailMessageId,
+			HttpSession session,
+			Model model
+			) {
+		MailDraftVO myMail = draftService.readDraftMailDetail(mailMessageId);
+
+		if (myMail == null) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new MailDraftVO());
+	    }
+	    return ResponseEntity.ok(myMail);
+	}
+
+}

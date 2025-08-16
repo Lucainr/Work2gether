@@ -1,0 +1,426 @@
+package kr.or.ddit.gmail.service;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.google.api.client.http.EmptyContent;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpContent;
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.http.json.JsonHttpContent;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.JsonObjectParser;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.commons.websocket.EchoHandler;
+import kr.or.ddit.employee.vo.OAuthVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class GmailCRUDCommonServiceImpl implements GmailCRUDCommonService {
+	private final EchoHandler echoHandler;
+
+	@Autowired
+	public GmailCRUDCommonServiceImpl(EchoHandler echoHandler) {
+		this.echoHandler = echoHandler;
+	}
+
+	private HttpRequestFactory requestFactory;
+
+	@PostConstruct
+	public void init() {
+		this.requestFactory = new NetHttpTransport().createRequestFactory();
+	}
+
+	@Override
+	public byte[] getAttachment(String mailMessageId, String attachmentId, OAuthVO oAuth) {
+		// Gmail API의 첨부파일 URL 생성
+		String attachmentUrl = String.format(
+				"https://gmail.googleapis.com/gmail/v1/users/me/messages/%s/attachments/%s", mailMessageId,
+				attachmentId);
+
+		try {
+			// HTTP 요청 생성
+			HttpRequestFactory requestFactory = new NetHttpTransport().createRequestFactory();
+			HttpRequest attachmentRequest = requestFactory.buildGetRequest(new GenericUrl(attachmentUrl));
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAuthorization("Bearer " + oAuth.getOauthAccess());
+			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+			headers.setAccept("application/json"); // JSON 형식 요청
+			headers.setContentLength(0L);
+			attachmentRequest.setHeaders(headers);
+
+			attachmentRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+
+			HttpResponse response = attachmentRequest.execute();
+			String jsonResponse = response.parseAsString();
+			JsonObject attachmentData = JsonParser.parseString(jsonResponse).getAsJsonObject();
+
+			String base64UrlData = attachmentData.get("data").getAsString();
+
+			byte[] result = Base64.getUrlDecoder().decode(base64UrlData);
+
+			return result;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	@Override
+	public ServiceResult deleteMail(String messageId, OAuthVO myNewOAuth) {
+		String url = String.format("https://gmail.googleapis.com/gmail/v1/users/me/messages/%s", messageId);
+		// oauth access token
+		String userAccessToken = myNewOAuth.getOauthAccess();
+
+		GenericUrl trashUrl = new GenericUrl(url);
+
+		HttpRequest trashRequest;
+		try {
+			trashRequest = requestFactory.buildDeleteRequest(trashUrl);
+			// 요청의 헤더 설정(oauth를 통한 api 호출에는 무조건 헤더설정이 필요함!!!!!!, 헤더 객체 자체는 init에서)
+			// Authorization 헤더 추가
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAuthorization("Bearer " + userAccessToken);
+			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+			headers.setAccept("application/json"); // JSON 형식 요청
+			// 생성한 요청에 header 셋팅하기
+			trashRequest.setHeaders(headers);
+
+			/*
+			 * 요청 실행 + 응답 파싱(모든 응답은 json 형태로 넘어옴) { "messages": [ { "id": "메일 한 개의 id",
+			 * "threadId": "그 메일의 스레드 id"(우리가 아는 그 스레드랑 개념이 다름 우린 안 쓸거임) } , ... ] }
+			 */
+			trashRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+
+			// 실행
+			HttpResponse response = trashRequest.execute();
+
+			if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+				log.info("메일이 성공적으로 휴지통으로 이동되었습니다.");
+				return ServiceResult.OK;
+			} else {
+				log.info("메일을 휴지통으로 이동하는 데 실패했습니다. 응답 코드: " + response.getStatusCode());
+				return ServiceResult.FAIL;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ServiceResult.FAIL;
+		}
+
+	}
+	
+	@Override
+	public ServiceResult trashDraftMail(String messageId, OAuthVO myNewOAuth) {
+		String url = String.format("https://gmail.googleapis.com/gmail/v1/users/me/drafts/%s", messageId);
+		// oauth access token
+		String userAccessToken = myNewOAuth.getOauthAccess();
+
+		GenericUrl trashDraftUrl = new GenericUrl(url);
+
+		HttpRequest trashRequest;
+		try {
+			trashRequest = requestFactory.buildDeleteRequest(trashDraftUrl);
+			// 요청의 헤더 설정(oauth를 통한 api 호출에는 무조건 헤더설정이 필요함!!!!!!, 헤더 객체 자체는 init에서)
+			// Authorization 헤더 추가
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAuthorization("Bearer " + userAccessToken);
+			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+			headers.setAccept("application/json"); // JSON 형식 요청
+			// 생성한 요청에 header 셋팅하기
+			trashRequest.setHeaders(headers);
+
+			/*
+			 * 요청 실행 + 응답 파싱(모든 응답은 json 형태로 넘어옴) { "messages": [ { "id": "메일 한 개의 id",
+			 * "threadId": "그 메일의 스레드 id"(우리가 아는 그 스레드랑 개념이 다름 우린 안 쓸거임) } , ... ] }
+			 */
+			trashRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+
+			// 실행
+			HttpResponse response = trashRequest.execute();
+
+			if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+				log.info("임시저장메일이 성공적으로 휴지통으로 이동되었습니다.");
+				return ServiceResult.OK;
+			} else {
+				log.info("임시저장메일을 휴지통으로 이동하는 데 실패했습니다. 응답 코드: " + response.getStatusCode());
+				return ServiceResult.FAIL;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ServiceResult.FAIL;
+		}
+	}
+	
+	@Override
+	public ServiceResult addMailLables(String messageId, OAuthVO myNewOAuth, String[] labels) {
+		// 라벨 수정의 경우 post 방식으로, 데이터를 가지고 보내야함
+		Map<String, Object> requestBody = new HashMap<>();
+	    requestBody.put("addLabelIds", labels);
+	    
+        JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+        HttpContent content = new JsonHttpContent(jsonFactory, requestBody);
+        
+		String url = String.format("https://gmail.googleapis.com/gmail/v1/users/me/messages/%s/modify", messageId);
+		String userAccessToken = myNewOAuth.getOauthAccess();
+		GenericUrl trashDraftUrl = new GenericUrl(url);
+		HttpRequest importantRequest;
+		try {
+			importantRequest = requestFactory.buildPostRequest(trashDraftUrl, content);
+			// 요청의 헤더 설정(oauth를 통한 api 호출에는 무조건 헤더설정이 필요함!!!!!!, 헤더 객체 자체는 init에서)
+			// Authorization 헤더 추가
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAuthorization("Bearer " + userAccessToken);
+			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+			headers.setAccept("application/json"); // JSON 형식 요청
+			// 생성한 요청에 header 셋팅하기
+			importantRequest.setHeaders(headers);
+
+			/*
+			 * 요청 실행 + 응답 파싱(모든 응답은 json 형태로 넘어옴) { "messages": [ { "id": "메일 한 개의 id",
+			 * "threadId": "그 메일의 스레드 id"(우리가 아는 그 스레드랑 개념이 다름 우린 안 쓸거임) } , ... ] }
+			 */
+			importantRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+
+			// 실행
+			HttpResponse response = importantRequest.execute();
+
+			if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+				log.info("중요메일 설정에 성공했습니다.");
+				return ServiceResult.OK;
+			} else {
+				log.info("중요메일 설정에 실패했습니다. " + response.getStatusCode());
+				return ServiceResult.FAIL;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ServiceResult.FAIL;
+		}
+	}
+	
+	@Override
+	public ServiceResult disMailLables(String messageId, OAuthVO myNewOAuth, String[] labels) {
+		Map<String, Object> requestBody = new HashMap<>();
+	    requestBody.put("removeLabelIds", labels);
+		
+	    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+        HttpContent content = new JsonHttpContent(jsonFactory, requestBody);
+        
+		String url = String.format("https://gmail.googleapis.com/gmail/v1/users/me/messages/%s/modify", messageId);
+		String userAccessToken = myNewOAuth.getOauthAccess();
+		GenericUrl trashDraftUrl = new GenericUrl(url);
+		HttpRequest importantRequest;
+		try {
+			importantRequest = requestFactory.buildPostRequest(trashDraftUrl, content);
+			// 요청의 헤더 설정(oauth를 통한 api 호출에는 무조건 헤더설정이 필요함!!!!!!, 헤더 객체 자체는 init에서)
+			// Authorization 헤더 추가
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAuthorization("Bearer " + userAccessToken);
+			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+			headers.setAccept("application/json"); // JSON 형식 요청
+			// 생성한 요청에 header 셋팅하기
+			importantRequest.setHeaders(headers);
+
+			/*
+			 * 요청 실행 + 응답 파싱(모든 응답은 json 형태로 넘어옴) { "messages": [ { "id": "메일 한 개의 id",
+			 * "threadId": "그 메일의 스레드 id"(우리가 아는 그 스레드랑 개념이 다름 우린 안 쓸거임) } , ... ] }
+			 */
+			importantRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+
+			// 실행
+			HttpResponse response = importantRequest.execute();
+
+			if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+				log.info("중요메일 설정에 성공했습니다.");
+				return ServiceResult.OK;
+			} else {
+				log.info("중요메일 설정에 실패했습니다. " + response.getStatusCode());
+				return ServiceResult.FAIL;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ServiceResult.FAIL;
+		}
+	}
+	
+	public ServiceResult addAndDisMailLables(String messageId, OAuthVO myNewOAuth, String[] addLabels, String[] disLabels) {
+		Map<String, Object> requestBody = new HashMap<>();
+	    requestBody.put("removeLabelIds", disLabels);
+	    requestBody.put("addLabelIds", addLabels);
+		
+	    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+        HttpContent content = new JsonHttpContent(jsonFactory, requestBody);
+        
+		String url = String.format("https://gmail.googleapis.com/gmail/v1/users/me/messages/%s/modify", messageId);
+		String userAccessToken = myNewOAuth.getOauthAccess();
+		GenericUrl trashDraftUrl = new GenericUrl(url);
+		HttpRequest importantRequest;
+		try {
+			importantRequest = requestFactory.buildPostRequest(trashDraftUrl, content);
+			// 요청의 헤더 설정(oauth를 통한 api 호출에는 무조건 헤더설정이 필요함!!!!!!, 헤더 객체 자체는 init에서)
+			// Authorization 헤더 추가
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAuthorization("Bearer " + userAccessToken);
+			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+			headers.setAccept("application/json"); // JSON 형식 요청
+			// 생성한 요청에 header 셋팅하기
+			importantRequest.setHeaders(headers);
+
+			/*
+			 * 요청 실행 + 응답 파싱(모든 응답은 json 형태로 넘어옴) { "messages": [ { "id": "메일 한 개의 id",
+			 * "threadId": "그 메일의 스레드 id"(우리가 아는 그 스레드랑 개념이 다름 우린 안 쓸거임) } , ... ] }
+			 */
+			importantRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+
+			// 실행
+			HttpResponse response = importantRequest.execute();
+
+			if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+				log.info("중요메일 설정에 성공했습니다.");
+				return ServiceResult.OK;
+			} else {
+				log.info("중요메일 설정에 실패했습니다. " + response.getStatusCode());
+				return ServiceResult.FAIL;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ServiceResult.FAIL;
+		}
+	}
+	
+	
+	@Override
+	public ServiceResult trashMail(String messageId, OAuthVO myNewOAuth, String type) {
+		String url = String.format("https://gmail.googleapis.com/gmail/v1/users/me/messages/%s/%s", messageId, type);
+		// oauth access token
+		String userAccessToken = myNewOAuth.getOauthAccess();
+
+		GenericUrl trashUrl = new GenericUrl(url);
+
+		HttpRequest trashRequest;
+		try {
+			HttpContent content = new EmptyContent();
+			trashRequest = requestFactory.buildPostRequest(trashUrl, content);
+			// 요청의 헤더 설정(oauth를 통한 api 호출에는 무조건 헤더설정이 필요함!!!!!!, 헤더 객체 자체는 init에서)
+			// Authorization 헤더 추가
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAuthorization("Bearer " + userAccessToken);
+			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+			headers.setAccept("application/json"); // JSON 형식 요청
+			headers.setContentLength(0L);
+			// 생성한 요청에 header 셋팅하기
+			trashRequest.setHeaders(headers);
+
+			/*
+			 * 요청 실행 + 응답 파싱(모든 응답은 json 형태로 넘어옴) { "messages": [ { "id": "메일 한 개의 id",
+			 * "threadId": "그 메일의 스레드 id"(우리가 아는 그 스레드랑 개념이 다름 우린 안 쓸거임) } , ... ] }
+			 */
+			trashRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+
+			// 실행
+			HttpResponse response = trashRequest.execute();
+
+			if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+				log.info("메일이 성공적으로 삭제(복구)되었습니다.");
+				return ServiceResult.OK;
+			} else {
+				log.info("메일이 삭제(복구)에 실패했습니다. 응답 코드: " + response.getStatusCode());
+				return ServiceResult.FAIL;
+			}
+		} catch (IOException e) {
+			return ServiceResult.FAIL;
+		}
+
+	}
+
+	
+	
+	
+	
+//	@Override
+//	public List<String> mailLables(String messageId, OAuthVO myNewOAuth) {
+//		List<String> result = new ArrayList<String>();
+//		String url = String.format("https://gmail.googleapis.com/gmail/v1/users/me/messages/%s",messageId);
+//		String userAccessToken = myNewOAuth.getOauthAccess();
+//		
+//		GenericUrl detailUrl = new GenericUrl(url);
+//		HttpRequest detailMessageRequest; 
+//		
+//		
+//		try {
+//			detailMessageRequest = requestFactory.buildGetRequest(detailUrl);
+//			// 요청의 헤더 설정(oauth를 통한 api 호출에는 무조건 헤더설정이 필요함!!!!!!, 헤더 객체 자체는 init에서)
+//			// Authorization 헤더 추가
+//			HttpHeaders headers = new HttpHeaders();
+//			headers.setAuthorization("Bearer " + userAccessToken);
+//			// google api의 모든 응답은 json 형태로 돌아오기 때문에 accept 지정해주는 것이 좋음
+//			headers.setAccept("application/json"); // JSON 형식 요청
+//			// 생성한 요청에 header 셋팅하기
+//			detailMessageRequest.setHeaders(headers);
+//
+//			/*
+//			 * 요청 실행 + 응답 파싱(모든 응답은 json 형태로 넘어옴) { "messages": [ { "id": "메일 한 개의 id",
+//			 * "threadId": "그 메일의 스레드 id"(우리가 아는 그 스레드랑 개념이 다름 우린 안 쓸거임) } , ... ] }
+//			 */
+//			detailMessageRequest.setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()));
+//
+//			// 실행
+//			HttpResponse detailResponse = detailMessageRequest.execute();
+//			
+//			JsonObject detailJson = JsonParser.parseString(detailResponse.parseAsString()).getAsJsonObject();
+//			JsonObject payload = detailJson.getAsJsonObject("payload");
+//		    JsonArray jsonHeaders = payload.getAsJsonArray("headers");
+//		    
+//		    if (headers != null) {
+//		        for (JsonElement headerElement : headers) {
+//		            JsonObject header = headerElement.getAsJsonObject();
+//		            String name = header.get("name").getAsString();
+//
+//		            // "From" 필드 확인
+//		            if ("From".equalsIgnoreCase(name)) {
+//		                String fromValue = header.get("value").getAsString();
+//		                // 내 이메일 주소와 일치하면 보낸 메일로 판단
+//		                if (fromValue.contains(myEmail)) {
+//		                    return true; // 보낸 메일임
+//		                }
+//		            }
+//		        }
+//		    }
+//
+//		    return false; // 보낸 메일이 아님
+//			
+//			
+//			JsonArray labelIds = detailJson.getAsJsonArray("labelIds");
+//			
+//			for (JsonElement labelId : labelIds) {
+//				String label = labelId.getAsString();
+//				result.add(label);
+//			}
+//			return result;
+//			
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//			return result;
+//		}		
+//	}
+
+}

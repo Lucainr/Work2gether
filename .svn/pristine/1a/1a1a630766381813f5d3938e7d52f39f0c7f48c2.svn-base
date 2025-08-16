@@ -1,0 +1,17 @@
+package kr.or.ddit.gmail.service;
+
+import java.util.List;
+
+import kr.or.ddit.commons.paging.PaginationInfo;
+import kr.or.ddit.gmail.vo.MailAttachmentVO;
+
+public interface MailAttachmentService {
+	// crud
+	public MailAttachmentVO readMailAttachment(String attachmentId);
+	public List<MailAttachmentVO> readMailAttachmentList(PaginationInfo paging);
+	public int readAttachmentExist(MailAttachmentVO mailAttachment);
+	public int createMailAttachment(MailAttachmentVO mailAttachment);
+	public int modifyMailAttachment();
+	public int updateMailAttachment();
+
+}

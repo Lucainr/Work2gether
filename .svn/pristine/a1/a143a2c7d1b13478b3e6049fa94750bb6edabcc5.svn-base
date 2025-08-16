@@ -1,0 +1,14 @@
+package kr.or.ddit.project.vo;
+
+import lombok.Data;
+
+@Data
+public class ProjectTaskVO {
+	private String taskId;
+	private String taskNm;
+	private String taskContent;
+	private String taskSdate;
+	private String taskEdate;
+	private String projectMemberid;
+	private String projId2;
+}

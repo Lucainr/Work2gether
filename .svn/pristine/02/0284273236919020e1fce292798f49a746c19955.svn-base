@@ -1,0 +1,79 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+
+<link rel="stylesheet" href="${pageContext.request.contextPath }/resources/css/attendance/attendanceSystem.css">
+<h4 id="page-title">근태 관리</h4>
+
+<div class="filter-container">
+    <!-- 입사일자 -->
+    <label for="atthisId" class="date-filter"><strong>조회 일자</strong>
+      <input type="date" id="startJoinDate"> ~ <input type="date" id="endJoinDate">
+    </label>
+  
+    <!-- 부서 -->
+    <label for="depart"><strong>부서</strong>
+      <select id="selectDepart">
+        
+      </select>
+    </label>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <!-- 직급 -->
+    <label for="posi"><strong>직급</strong>
+      <select id="selectPosi">
+        
+      </select>
+    </label>
+
+    <!-- 검색창 -->
+    <div class="search-container">
+      <input type="text" id="searchInput" class="search-input" placeholder="사원명을 입력하세요">
+<!--       <span class="search-icon"> -->
+<!--         <i class='bx bx-search'></i> -->
+<!--       </span> -->
+    </div>
+  </div>
+
+<div class="table">
+    <table class="table" id="attendanceTable">
+        <thead>
+            <tr>
+                <th>날짜</th>
+                <th>사원명</th>
+                <th>직급</th>
+                <th>부서</th>
+                <th>출근 시간</th>
+                <th>퇴근 시간</th>
+                <th>초과 근무 여부</th>
+                <th>초과 근무 시간(분)</th>
+                <th>출근 상태</th>
+                <th>퇴근 상태</th>
+                <th>지각 사유</th>
+            </tr>
+        </thead>
+        <tbody id="innerTbody">
+            <!-- 근태 기록이 들어가야 함-->
+        </tbody>
+    </table>
+</div>
+<div id="pagination" class="pagination-container"></div>
+
+
+
+
+
+<script>
+	const contextPath = "${pageContext.request.contextPath}";
+	const companyId = "${companyId}";
+</script>
+<script src="${pageContext.request.contextPath }/resources/js/app/attendance/attendanceSystem.js"></script>
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,196 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath }/resources/css/attendance/attendanceSystem.css">
+    <h4 id="page-title">근태 관리</h4>
+
+    <div class="filter-container">
+
+        <!-- 직급 -->
+        <label for="posi"><strong>직급</strong>
+            <select id="selectPosi">
+
+            </select>
+        </label>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <!-- 부서 -->
+        <label for="depart"><strong>부서</strong>
+            <select id="selectDepart">
+
+            </select>
+        </label>
+
+
+
+        <!-- 조회 일자 -->
+        <label for="atthisId" class="date-filter"><strong>조회 날짜</strong>
+            <input type="date" id="startJoinDate"> ~ <input type="date" id="endJoinDate">
+        </label>
+
+        <div class="button-container d-flex gap-2" style="margin-top:5px;">
+            <button  id="downloadBtn" class="btn btn-success btn-sm-custom">
+                <i class="fas fa-download"></i> 근태기록 다운로드
+            </button>
+        </div>  
+
+        <!-- 검색창 -->
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="사원명을 입력하세요">
+            <!--       <span class="search-icon"> -->
+            <!--         <i class='bx bx-search'></i> -->
+            <!--       </span> -->
+        </div>
+    </div>
+
+    <div class="table">
+        <table class="table table-striped" id="attendanceTable">
+            <thead>
+                <tr>
+                    <th data-column="date">
+                        <div class="th-content">
+                            날짜
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="name">
+                        <div class="th-content">
+                            사원명
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="posi">
+                        <div class="th-content">
+                            직급
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="depart">
+                        <div class="th-content">
+                            부서
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="stime">
+                        <div class="th-content">
+                            출근 시간
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="etime">
+                        <div class="th-content">
+                            퇴근 시간
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="overYN">
+                        <div class="th-content">
+                            초과 근무 여부
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="overMin">
+                        <div class="th-content">
+                            초과 근무 시간(분)
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="sStatus">
+                        <div class="th-content">
+                            출근 상태
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="eStatus">
+                        <div class="th-content">
+                            퇴근 상태
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="cause">
+                        <div class="th-content">
+                            지각 사유
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                    <th data-column="cause">
+                        <div class="th-content">
+                            조퇴 사유
+                            <span class="arrow">▼</span>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody id="innerTbody">
+                <!-- 근태 기록이 들어가야 함-->
+            </tbody>
+        </table>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div id="pagination" class="pagination-container"></div>
+        <button type="button" id="changeTimeBtn" class="btn btn-primary">출*퇴근시간 변경</button>
+    </div>
+    
+    <div id="modAttendTimeModal" class="modal fade bd-example-modal-sm"
+	        tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel"
+	        aria-hidden="true">   
+	<div class="modal-dialog modal-sm">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4>출퇴근 시간 수정</h4>
+
+				<button type="button" class="btn-close" data-bs-dismiss="modal"
+					aria-label="Close"></button>
+			</div>
+			<div id="modAttendTimeModalBody" class="modal-body table-responsive">
+                
+                    
+			</div>
+
+				<div class="modal-footer d-flex justify-content-end">
+				    <button type="button" id="modATBtn" class="btn btn-primary">
+				        수정
+				    </button>
+				    <button type="button" id="closeBtn" class="btn btn-danger" data-bs-dismiss="modal">
+				        취소
+				    </button>
+			</div>		
+		</div>
+	</div>
+</div>
+
+<div id="attendEmpModal" class="modal fade bd-example-modal"
+	tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel"
+	aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4>근태 상세 보기</h4>
+
+				<button type="button" class="btn-close" data-bs-dismiss="modal"
+					aria-label="Close"></button>
+			</div>
+			<div id="attendEmpModalBody" class="modal-body table-responsive">
+			</div>
+
+				<div class="modal-footer d-flex justify-content-end">
+				    <button type="button" id="modAttEmpBtn" class="btn btn-primary">
+				        수정
+				    </button>
+				    <button type="button" id="closeBtn" class="btn btn-danger" data-bs-dismiss="modal">
+				        취소
+				    </button>
+			</div>		
+		</div>
+	</div>
+</div>
+
+
+
+
+    <script>
+        const contextPath = "${pageContext.request.contextPath}";
+        const companyId = "${companyId}";
+    </script>
+    <script src="${pageContext.request.contextPath }/resources/js/app/attendance/attendanceSystem.js"></script>

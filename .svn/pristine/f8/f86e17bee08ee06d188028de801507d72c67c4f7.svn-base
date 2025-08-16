@@ -1,0 +1,51 @@
+package kr.or.ddit.gmail.service;
+
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.commons.paging.PaginationInfo;
+import kr.or.ddit.gmail.dao.MailReceivedMapper;
+import kr.or.ddit.gmail.vo.MailReceivedVO;
+@Service
+public class MailReceivedServiceImpl implements MailReceivedService {
+	@Inject
+	private MailReceivedMapper mapper;
+	
+	@Override
+	public String readLastApiCallTime(String empMail) {
+		return mapper.selectLastApiCallTime(empMail);
+	}
+
+	@Override
+	public List<MailReceivedVO> readReceivedMailList(PaginationInfo paging) {
+		int totalRecord = mapper.selectTotalRecord(paging);
+		paging.setTotalRecord(totalRecord);
+		return mapper.selectReceivedMailList(paging);
+	}
+	
+	@Override
+	public MailReceivedVO readReceivedMailDetail(String messageId) {
+		return mapper.selectReceivedMailDetail(messageId);
+	}
+	
+	@Override
+	public int readReceivedMailExist(MailReceivedVO receivedMail) {
+		return mapper.selectReceivedMailExist(receivedMail);
+		
+	}
+	
+	@Override
+	public int createReceivedMail(MailReceivedVO receivedMail) {
+		return mapper.insertReceivedMail(receivedMail);
+	}
+
+	@Override
+	public int deleteReceivedMail(String mailMessageid) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+}

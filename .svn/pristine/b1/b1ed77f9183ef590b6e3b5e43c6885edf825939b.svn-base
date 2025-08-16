@@ -1,0 +1,103 @@
+package kr.or.ddit.project.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import kr.or.ddit.account.vo.AccountVO;
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.commons.exception.BoardException;
+import kr.or.ddit.commons.validate.UpdateGroup;
+import kr.or.ddit.employee.vo.EmployeeVO;
+import kr.or.ddit.project.service.ProjectService;
+import kr.or.ddit.project.vo.ProjectVO;
+import kr.or.ddit.security.AccountVOWrapper;
+
+@Controller
+@RequestMapping("/{companyId}/project")
+public class ProjectModifyController {
+	
+	public static final String MODELNAME = "targetProject";
+	
+	
+	@Autowired
+	private ProjectService service;
+	
+	@GetMapping("/{projectId}/edit")
+	public String editForm(
+			@PathVariable("projectId") String projectId,
+			Model model) {
+		
+		model.addAttribute(MODELNAME, service.readProject(projectId));
+
+		return "project/projectEdit"; 
+	}
+	
+	@PostMapping("/{projectId}/update")
+	public String updateProject(
+	    @Validated(UpdateGroup.class) @ModelAttribute(MODELNAME) ProjectVO project,
+	    @PathVariable("companyId") String companyId,
+	    @PathVariable("projectId") String projectId,
+	    Authentication authentication,
+	    BindingResult errors,
+	    RedirectAttributes redirectAttributes
+	) {
+
+		redirectAttributes.addFlashAttribute(MODELNAME, project);
+		
+		String lvn = null;
+		if(!errors.hasErrors()) {
+            AccountVOWrapper principal = (AccountVOWrapper) authentication.getPrincipal();
+            AccountVO account = principal.getAccount();
+
+            EmployeeVO myEmp = (EmployeeVO)account;
+            if (myEmp != null) {
+                project.setProjLastup(myEmp.getEmpId()); // EmployeeVO의 empId 필드 값 설정
+            } else {
+                redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
+                return "redirect:/{companyId}/login"; // 로그인 페이지로 리다이렉트
+            }
+            try {
+            	project.setProjId(projectId);
+            	service.modifyProject(project);
+                lvn = "redirect:/" + companyId + "/project";
+            } catch (BoardException e) {
+                redirectAttributes.addFlashAttribute(MODELNAME, project);
+                redirectAttributes.addFlashAttribute("message", e.getMessage());
+                lvn = "redirect:/" + companyId + "/project/edit";
+            }
+        } else {
+            redirectAttributes.addFlashAttribute(MODELNAME, project);
+            redirectAttributes.addFlashAttribute(BindingResult.MODEL_KEY_PREFIX, errors);
+            lvn = "redirect:/" + companyId + "/project/edit";
+        }
+        return lvn;
+	}
+	
+	@DeleteMapping("/{projectId}")
+	public ResponseEntity<?> deleteProject(
+			@PathVariable("projectId") String projectId,
+			Model model) {
+		
+		ServiceResult result = service.removeProject(projectId);
+		
+		if(result.equals(ServiceResult.OK)) {
+			return ResponseEntity.ok().build();
+		}else {
+			return ResponseEntity.badRequest().build();
+		}
+	}
+
+	
+}

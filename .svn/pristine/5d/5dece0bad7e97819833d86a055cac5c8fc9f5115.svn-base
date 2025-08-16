@@ -1,0 +1,46 @@
+package kr.or.ddit.organitree.vo;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import lombok.Data;
+
+@Data
+public class ContractVO {
+	
+	private String contractId;
+	
+	private String contractCompany;
+	
+	private String contractName;
+	
+	private String contractTel;
+	
+	private String contractEmail;
+	
+	private LocalDate contractStart;
+	
+	private LocalDate contractEnd;
+	
+	private LocalDate contractApprovalDate;
+	
+	private String contractBucket;
+	
+	private String contractType;
+	
+	private String contractStatus;
+	
+	private String contractReject;
+	
+	private String empCountId;
+	
+	private String provId;
+	
+	private String storageId;
+	
+	private String scaleId;
+	
+	
+	private List<DepartmentVO> departmentList;
+	
+}

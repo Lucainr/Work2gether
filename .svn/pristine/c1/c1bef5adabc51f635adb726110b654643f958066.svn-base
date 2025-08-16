@@ -1,0 +1,26 @@
+package kr.or.ddit.account.dao;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import kr.or.ddit.account.vo.AccountVO;
+
+
+@Mapper
+public interface AccountMapper {
+	// crud
+	public List<AccountVO> selectAccountList();
+	public AccountVO selectAccount(@Param("accountMail")String accountMail);
+	/**
+	 * 로그인할 때 일치하는 계정이 있는지 확인하는 메소드
+	 * @param account
+	 * @return
+	 */
+	public AccountVO selectAccountExist(AccountVO account);
+	public int insertAccount(AccountVO account);
+	public int updateAccount(AccountVO account);
+	public int updateStatusAccount(String accountMail);
+	public int deleteAccount(String accountMail);
+}

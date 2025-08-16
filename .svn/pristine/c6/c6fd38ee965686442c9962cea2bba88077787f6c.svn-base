@@ -1,0 +1,53 @@
+package kr.or.ddit.survey.service;
+
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.commons.enumpkg.ServiceResult;
+import kr.or.ddit.survey.dao.SurveyResultMapper;
+import kr.or.ddit.survey.vo.SurveyResultVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class SurveyResultServiceImpl implements SurveyResultService {
+	@Inject
+	private SurveyResultMapper mapper;
+
+	@Override
+	public List<SurveyResultVO> readSurveyResultList(String sboardNo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public SurveyResultVO readSurveyResult(SurveyResultVO result) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public boolean readSurveyExist(String empId, String sboardNo) {
+		int rowcnt = mapper.selectSurveyExist(empId, sboardNo);
+		if(rowcnt==0) {
+			return true;
+		} else{
+			return false;
+		}
+	}
+	
+	@Override
+	public ServiceResult createSurveyResult(SurveyResultVO result) {
+		int rownum = mapper.insertSurveyResult(result);
+		if(rownum>0) {
+			return ServiceResult.OK;
+		} else {
+			return ServiceResult.FAIL;
+		}
+	}
+
+
+}

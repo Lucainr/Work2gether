@@ -1,0 +1,102 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>    
+
+<link rel="stylesheet" href="${pageContext.request.contextPath }/resources/css/employee/hrEmployee.css">
+<h4 id="page-title">사원 관리</h4>
+<hr/>
+	
+<div class="filter-container">
+  <!-- 입사일자 -->
+  <label for="empJoin" class="date-filter"><strong>입사일자</strong>
+    <input type="date" id="startJoinDate"> ~ <input type="date" id="endJoinDate">
+  </label>
+
+  <!-- 부서 -->
+  <label for="depart"><strong>부서</strong>
+    <select id="selectDepart">
+      
+    </select>
+  </label>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <!-- 직급 -->
+  <label for="posi"><strong>직급</strong>
+    <select id="selectPosi">
+      
+    </select>
+  </label>
+  <label for="selectStatus"><strong>재직상태</strong>
+  	<select id="selectStatus">
+  		<option value="">전체</option>
+<!--   		<option value="U">재직중</option> -->
+<!--   		<option value="V">휴가중</option> -->
+<!--   		<option value="S">계정 정지</option> -->
+  	</select>
+  </label>
+  <!-- 검색창 -->
+  <div class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="사원명을 입력하세요">
+    <span class="search-icon">
+      <i class='bx bx-search'></i>
+    </span>
+  </div>
+</div>
+
+<div class="table">
+  <table class="table" id="employeeTable">
+    <thead>
+      <tr>
+        <th>사번</th>
+        <th>사원명</th>
+        <th>부서</th>
+        <th>직급</th>
+        <th>입사일자</th>
+        <th>재직상태</th>
+        <th>이메일</th>
+      </tr>
+    </thead>
+    <tbody id="innerTbody">
+      <!-- 사원 데이터가 비동기적으로 들어갈 부분 -->
+    </tbody>
+  </table>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+
+<div id="pagination" class="pagination-container"></div>
+<div>
+        <button type="button" id="addEmp" class="btn btn-primary" style="margin-left: 10px;">사원 등록</button>
+</div>
+</div>
+
+<div id="modEmpModal" class="modal fade bd-example-modal-lg"
+	tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel"
+	aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4>사원 정보 수정</h4>
+
+				<button type="button" class="btn-close" data-bs-dismiss="modal"
+					aria-label="Close"></button>
+			</div>
+			<div id="modEmpModalBody" class="modal-body table-responsive">
+			</div>
+
+				<div class="modal-footer d-flex justify-content-end">
+				    <button type="button" id="modEmpBtn" class="btn btn-primary">
+				        수정
+				    </button>
+				    <button type="button" id="closeBtn" class="btn btn-danger" data-bs-dismiss="modal">
+				        취소
+				    </button>
+			</div>		
+		</div>
+	</div>
+</div>
+
+
+<script>
+	const contextPath = "${pageContext.request.contextPath}";
+	const companyId = "${companyId}";
+</script>
+<script src="${pageContext.request.contextPath }/resources/js/app/employee/hrEmployee.js"></script>

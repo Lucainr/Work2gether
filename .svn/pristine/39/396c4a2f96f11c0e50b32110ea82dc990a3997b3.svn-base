@@ -1,0 +1,78 @@
+/**
+ * 
+ */
+
+function paging(page) {
+	console.log(page);
+	searchForm.page.value = page;
+	searchForm.requestSubmit();
+}
+
+
+
+//날짜 객체를 받아서 yyyy-mm-dd(input에 찍힐 모양)
+function changeDateFormat(date) {
+	let yyyy = date.getFullYear();
+	let mm = String(date.getMonth() + 1).padStart(2, '0');
+	let dd = String(date.getDate()).padStart(2, '0');
+	return yyyy + '-' + mm + '-' + dd;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+	let $searchForm = $("#searchForm");
+	let $searchBtn = $("#search-btn");	
+	$searchBtn.on("click", function(){
+		let $parent = $(this).parents(".search-area");
+		$parent.find(":input[name]").each(function(index, ipt){
+			console.log(ipt.name, ipt.value);
+
+			if(searchForm[ipt.name]){
+				searchForm[ipt.name].value=ipt.value.replace(/-/g, "");
+			}	
+			$searchForm.submit(); 	
+		});
+	});
+	
+	// 오늘 날짜
+	const todayDate = new Date();
+	// 오늘날짜
+	const today = changeDateFormat(todayDate);
+
+	const weeklyBtn = document.querySelector('#weekly-btn');
+	const monthlyBtn = document.querySelector('#monthly-btn');
+	const yearBtn = document.querySelector('#year-btn');
+	const startDateInput = document.querySelector('#start-date');
+	const endDateInput = document.querySelector('#end-date');
+
+	// 주간 검색 했을 때
+	weeklyBtn.addEventListener("click", () => {
+		const weekAgo = new Date(todayDate); // 오늘 날짜 복사
+		weekAgo.setDate(todayDate.getDate() - 7);
+
+		let start = changeDateFormat(weekAgo);
+		startDateInput.value = start;
+		endDateInput.value = today;
+	});
+
+	// 월간 검색 했을 때
+	monthlyBtn.addEventListener("click", () => {
+		const monthAgo = new Date(todayDate); // 오늘 날짜 복사
+		monthAgo.setMonth(todayDate.getMonth() - 1);
+
+		let start = changeDateFormat(monthAgo);
+		startDateInput.value = start;
+		endDateInput.value = today;
+	});
+
+	// 주간 검색 했을 때
+	yearBtn.addEventListener("click", () => {
+		const oneYearAgo = new Date(todayDate); // 오늘 날짜 복사
+		oneYearAgo.setFullYear(todayDate.getFullYear() - 1);
+
+		let start = changeDateFormat(oneYearAgo);
+		startDateInput.value = start;
+		endDateInput.value = today;
+	});
+
+
+})

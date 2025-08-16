@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.employee.dao.EmployeeMapper">
+	<resultMap type="EmployeeVO" id="empMap" autoMapping="true">
+		<association property="oAuth" autoMapping="true"/>
+		<association property="position" autoMapping="true"></association>
+		<association property="departmentVO" autoMapping="true"></association>
+	</resultMap>
+
+
+
+<sql id="searchEmp">
+    <where>
+  	
+  	<!-- 상태 조건: 재직중, 휴가중, 계정 정지만 허용 -->
+    <if test="variousCondition.status == null or variousCondition.status == ''">
+            (E.EMP_STATUS = 'U' OR E.EMP_STATUS = 'V' OR E.EMP_STATUS = 'S')
+    </if>
+  	
+	<if	test="variousCondition.department != null and variousCondition.department != ''">
+		AND D.DEPART_CODE = #{variousCondition.department}
+	</if>
+	
+	<if	test="variousCondition.position != null and variousCondition.position != ''">
+		AND P.POSI_ID = #{variousCondition.position}
+	</if>
+	<if test="variousCondition.status != null and variousCondition.status!=''">
+		AND E.EMP_STATUS = #{variousCondition.status}
+	</if>
+        <!-- 검색어 조건 -->
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(variousCondition.searchWord)">
+            AND (INSTR(E.EMP_NAME, #{variousCondition.searchWord}) > 0)
+        </if>
+        <!-- 입사 시작일 조건 -->
+        <if test="variousCondition.startDate != null and variousCondition.startDate != ''">
+            AND TO_DATE(E.EMP_JOIN,'YYYY-MM-DD') >= #{variousCondition.startDate}
+        </if>
+        <!-- 입사 종료일 조건 -->
+        <if test="variousCondition.endDate != null and variousCondition.endDate != ''">
+            <![CDATA[
+            AND TO_DATE(E.EMP_JOIN,'YYYY-MM-DD') <= #{variousCondition.endDate}
+            ]]>
+        </if>
+    </where>
+</sql>
+
+
+
+	
+
+
+	
+	<select id="selectEmployee" resultMap="empMap">
+		SELECT EMPLOYEE.*,
+				OAUTH.*			   
+			FROM EMPLOYEE INNER JOIN OAUTH
+				ON EMPLOYEE.EMP_MAIL = OAUTH.OAUTH_EMPMAIL				
+			WHERE EMPLOYEE.EMP_MAIL=#{empMail}
+	</select>
+	
+	
+	<select id="selectTotalRecord" resultType="int">
+SELECT COUNT(E.EMP_ID)
+    FROM EMPLOYEE E
+    INNER JOIN POSITION P 
+        ON E.POSI_ID = P.POSI_ID
+    LEFT OUTER JOIN DEPARTMENT D
+        ON E.DEPART_CODE = D.DEPART_CODE
+		 <include refid="searchEmp"/>
+
+	</select>
+	
+<select id="selectEmployeeList" resultMap="empMap">
+    SELECT B.*
+    FROM (
+        SELECT ROWNUM RNUM, A.*
+        FROM (
+            SELECT 
+                E.EMP_ID, 
+                E.EMP_NAME,  
+                E.EMP_MAIL,
+                E.EMP_JOIN,
+                P.POSI_ID, 
+                P.POSI_NAME,
+                D.DEPART_CODE, 
+                D.DEPART_NAME,
+                E.EMP_STATUS
+            FROM EMPLOYEE E
+            INNER JOIN POSITION P 
+                ON E.POSI_ID = P.POSI_ID
+            LEFT OUTER JOIN DEPARTMENT D
+                ON E.DEPART_CODE = D.DEPART_CODE
+            <include refid="searchEmp"/>
+           
+            ORDER BY E.EMP_ID ASC
+        ) A    
+    ) B
+    <![CDATA[
+        WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+    ]]>
+</select>
+
+
+	
+	<select id="selectEmployeeForAuth" resultType="EmployeeVO">
+		SELECT *
+		FROM EMPLOYEE
+		WHERE EMP_MAIL=#{empMail} AND EMP_NAME=#{empName} AND EMP_PHONE=#{empPhone}
+	</select>
+	
+	<select id="selectEmployeeForJoin" resultType="EmployeeVO">
+		SELECT *
+		FROM EMPLOYEE
+		WHERE EMP_MAIL=#{empMail}
+	</select>
+	
+	
+	<insert id="insertEmployee">
+		
+		<selectKey order="BEFORE" keyProperty="empId" resultType="string">
+			SELECT (SUBSTR(${empJoin},1, 6)) || LPAD(TO_NUMBER(LTRIM(SUBSTR(EMP_ID, 7, 4), '0')) + 1, 4, '0')
+			FROM (
+			    SELECT EMP_ID
+			    FROM EMPLOYEE
+			    WHERE SUBSTR(EMP_ID, 1, 6) = '202412'
+			    ORDER BY TO_NUMBER(SUBSTR(EMP_ID, 7, 4)) DESC
+			)
+			WHERE ROWNUM = 1
+		</selectKey>
+	
+		INSERT INTO EMPLOYEE(EMP_ID, EMP_PASS, EMP_NAME, EMP_MAIL, EMP_JOIN, EMP_STATUS, 
+		POSI_ID, DEPART_CODE, EMP_BIRTH, EMP_GENDER, EMP_PHONE)
+		VALUES(
+			#{empId,jdbcType=VARCHAR}
+			, '1234' <!-- 초기 비밀번호 -->
+			, #{empName,jdbcType=VARCHAR}
+			, #{empMail,jdbcType=VARCHAR}
+			, #{empJoin,jdbcType=VARCHAR}
+			, 'W' <!-- 첫 insert 시에는 W상태 -->
+			, #{posiId,jdbcType=VARCHAR} <!-- 직급아이디 -->
+			, #{departCode,jdbcType=VARCHAR} <!-- 부서아이디 -->
+			, #{empBirth,jdbcType=VARCHAR}
+			, #{empGender,jdbcType=VARCHAR}
+			, #{empPhone,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 
+		emp pass나 account_mail이 업데이트 될 경우 상위 테이블인 account가 먼저 업데이트가 되어야함
+		해당 트리거 필요(넣어뒀음)	
+	-->
+	<update id="updateEmployee">
+		UPDATE EMPLOYEE
+		SET
+			<trim prefixOverrides=",">
+				<if test="empPass neq null and empPass.length gt 0">
+				 , EMP_PASS=#{empPass,jdbcType=VARCHAR}
+				</if>
+				<if test="empName neq null and empName.length gt 0">
+				 , EMP_NAME=#{empName,jdbcType=VARCHAR}
+				</if>
+				<if test="empBirth neq null and empBirth.length gt 0">
+				 , EMP_BIRTH=#{empBirth,jdbcType=VARCHAR}
+				</if>
+				<if test="empGender neq null and empGender.length gt 0">
+				 , EMP_GENDER=#{empGender,jdbcType=VARCHAR}
+				</if>
+				<if test="empAddr1 neq null and empAddr1.length gt 0">
+				 , EMP_ADDR1=#{empAddr1,jdbcType=VARCHAR}
+				</if>
+				<if test="empAddr2 neq null and empAddr2.length gt 0">
+				 , EMP_ADDR2=#{empAddr2,jdbcType=VARCHAR}
+				</if>
+				<if test="empPhone neq null and empPhone.length gt 0">
+				 , EMP_PHONE=#{empPhone,jdbcType=VARCHAR}
+				</if>
+				<if test="empMail neq null and empMail.length gt 0">
+				 , EMP_MAIL=#{empMail,jdbcType=VARCHAR}
+				</if>
+				<if test="empJoin neq null and empJoin.length gt 0">
+				 , EMP_JOIN=#{empJoin,jdbcType=VARCHAR}
+				</if>
+				<if test="empImg neq null and empImg.length gt 0">
+				 , EMP_IMG=#{empImg,jdbcType=BLOB}
+				</if>
+				<if test="empSignimg neq null and empSignimg.length gt 0">
+				 , EMP_SIGNIMG=#{empSignimg,jdbcType=BLOB}
+				</if>
+				<if test="empStatus neq null and empStatus.length gt 0">
+				 , EMP_STATUS=#{empStatus,jdbcType=VARCHAR}
+				</if>
+				<if test="posiId neq null and posiId.length gt 0">
+				 , POSI_ID=#{posiId,jdbcType=VARCHAR}
+				</if>
+				<if test="departCode neq null and departCode.length gt 0">
+				 , DEPART_CODE=#{departCode,jdbcType=VARCHAR}
+				</if>
+			</trim>
+		WHERE EMP_ID=#{empId}
+	</update>
+	
+	
+	<update id="updateEmployeeStatus">
+		UPDATE EMPLOYEE
+		SET EMP_STATUS=#{empStatus}
+		WHERE EMP_MAIL=#{empMail}
+	</update>
+	
+	<delete id="deleteEmployee">
+	
+	</delete>
+	
+	<update id="deleteEmpImg">
+		UPDATE EMPLOYEE
+		SET EMP_IMG=null
+		WHERE EMP_ID=#{empId}
+	</update>
+	<update id="deleteEmpSignImg">
+		UPDATE EMPLOYEE
+		SET EMP_SIGNIMG=null
+		WHERE EMP_ID=#{empId}
+	</update>
+
+	<!-- 12.13 민경주 - 재직중인 사원 목록 조회 (조직도용, 관리자 제외, 직급 내림차순 정렬) -->
+	<select id="selectEmployeeListForDept" resultMap="empMap">
+		SELECT
+			E.EMP_ID
+		  , E.EMP_NAME
+		  , E.DEPART_CODE
+		  ,	(SELECT P.POSI_NAME
+			 FROM POSITION P
+			 WHERE P.POSI_ID = E.POSI_ID) AS POSI_NAME -- 스칼라 서브쿼리로 직위명 조회
+		  , (SELECT D.DEPART_NAME
+			 FROM DEPARTMENT D
+			 WHERE D.DEPART_CODE = E.DEPART_CODE) AS DEPART_NAME -- 스칼라 서브쿼리로 부서명 조회
+		FROM EMPLOYEE E
+		WHERE E.EMP_STATUS = 'U'
+		  AND E.POSI_ID != 7
+		ORDER BY
+			E.DEPART_CODE, -- DEPART_CODE는 EMPLOYEE 테이블에 있다고 가정
+			E.POSI_ID DESC
+	</select>
+
+	<!-- 12.14 민경주 - 사원id로 조직명, 직급명 갖고오기 -->
+	<select id="selectEmployeePosiNameAndDeptNameByEmpId" resultType="map">
+		SELECT
+			   (SELECT P.POSI_NAME
+				   FROM POSITION P
+				   WHERE P.POSI_ID = E.POSI_ID) AS POSI_NAME -- 스칼라 서브쿼리로 직위명 조회
+			 , (SELECT D.DEPART_NAME
+				FROM DEPARTMENT D
+				WHERE D.DEPART_CODE = E.DEPART_CODE) AS DEPART_NAME -- 스칼라 서브쿼리로 부서명 조회
+		FROM EMPLOYEE E
+		WHERE E.EMP_ID = #{empId}
+	</select>
+
+
+	<select id="selectAllDept" resultType="DepartmentVO">
+
+	SELECT
+		 DEPART_CODE
+	   , DEPART_NAME
+	  FROM DEPARTMENT
+	 WHERE DEPART_STATUS='Y'
+	
+	</select>
+	
+	<select id="selectAllPosi" resultType="PositionVO">
+		SELECT 
+     POSI_ID
+   , POSI_NAME
+  FROM POSITION
+	</select>
+</mapper>

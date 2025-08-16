@@ -1,0 +1,153 @@
+/* 문서 미리보기 영역 */
+.preview-container {
+    padding: 20px;
+}
+
+/* 문서 영역 - A4 크기 */
+.document-area {
+    width: 21cm;
+    min-height: 29.7cm;
+    padding: 2cm;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 0 0.5cm rgba(0,0,0,0.1);
+}
+
+/* 조직도 트리 스타일 */
+.org-tree {
+    border: 1px solid #ddd;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.org-tree > ul {  /* 최상위 ul */
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.org-tree ul ul {  /* 하위 ul들 */
+    list-style: none;
+    padding-left: 20px;
+}
+
+.org-tree li {
+    padding: 3px 0;
+    cursor: pointer;
+}
+
+/* 폴더 아이콘 및 동작 */
+.folder > span:before {
+    content: "📁";
+    margin-right: 5px;
+}
+
+.folder.open > span:before {
+    content: "📂";
+}
+
+.folder > ul {
+    display: none;
+}
+
+.folder.open > ul {
+    display: block;
+}
+
+/* 결재자 목록 */
+.approver-list {
+    height: 400px;
+    overflow: auto;
+}
+
+/* 사원 표시 스타일 */
+.department-head {
+    font-weight: bold;
+    color: #2c3e50;
+    padding: 3px 0;
+}
+
+.employee {
+    padding: 2px 0 2px 15px;
+}
+
+.employees {
+    margin-left: 20px;
+    border-left: 1px dotted #ddd;
+}
+
+/* 모달 레이아웃 */
+.directory-container {
+    flex: 1;
+    max-width: 50%;
+}
+
+.approver-container {
+    flex: 1;
+}
+
+/* 버튼 그룹 */
+.action-button-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.action-button-group .btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+/* 휴가 문서 테이블 */
+.vacation-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.vacation-table th,
+.vacation-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.vacation-table th {
+    background-color: #f5f5f5;
+}
+
+/* 폼 선택 영역 */
+.approval-container {
+    padding: 20px;
+}
+
+.form-select-area {
+    max-width: 600px;
+}
+
+.select-box-wrapper {
+    margin-bottom: 20px;
+}
+
+.select-box-wrapper label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* 반응형 처리 */
+@media (max-width: 768px) {
+    .document-area {
+        padding: 20px;
+    }
+}

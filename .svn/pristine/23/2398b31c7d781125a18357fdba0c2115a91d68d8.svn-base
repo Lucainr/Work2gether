@@ -1,0 +1,11 @@
+const cancelBtn = document.querySelector(".btn-danger");
+cancelBtn.addEventListener("click" , () => {
+    location.href = `${contextPath}/resources/jsp/groupwareDemo.jsp`
+})
+
+const submitBtn = document.querySelector("#submitBtn");
+submitBtn.addEventListener("submit" , ()=> {
+	
+
+	
+})

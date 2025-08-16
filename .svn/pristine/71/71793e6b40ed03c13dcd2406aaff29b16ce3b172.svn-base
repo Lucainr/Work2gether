@@ -1,0 +1,46 @@
+package kr.or.ddit.gmail.dao;
+
+import javax.inject.Inject;
+
+import org.junit.jupiter.api.Test;
+
+class MailDraftMapperTest {
+	@Inject
+	private MailDraftMapper mapper;
+
+	@Test
+	void testSelectTotalRecord() {
+		mapper.selectTotalRecord(null);
+	}
+
+	@Test
+	void testSelectLastApiCallTime() {
+		mapper.selectLastApiCallTime("kimny950111@naver.com");
+	}
+
+	@Test
+	void testSelectDraftMailDetail() {
+		mapper.selectDraftMailDetail(null);
+	}
+
+	@Test
+	void testSelectDraftMailList() {
+		mapper.selectDraftMailList(null);
+	}
+
+	@Test
+	void testSelectDraftMailExist() {
+		mapper.selectDraftMailExist(null);
+	}
+
+	@Test
+	void testInsertDraftMail() {
+		mapper.insertDraftMail(null);
+	}
+
+	@Test
+	void testDeleteDraftMail() {
+		mapper.deleteDraftMail(null);
+	}
+
+}

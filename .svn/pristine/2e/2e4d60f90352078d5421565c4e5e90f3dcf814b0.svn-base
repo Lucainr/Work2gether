@@ -1,0 +1,63 @@
+@charset "UTF-8";
+
+
+#pagination {
+    display: block;
+}
+
+#pagination.hidden {
+    display: none;
+}
+/* 페이지네이션 컨테이너 스타일 */
+.pagination-container {
+    display: flex;
+    justify-content: space-between; /* 양 끝에 배치 */
+    align-items: center;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+/* 페이지네이션 버튼 공통 스타일 */
+.pagination-container button {
+    border: 1px solid #ddd;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    gap : 20px;
+}
+
+/* 활성 페이지 스타일 */
+.pagination-container button.active {
+    background-color: #6c5ce7;
+    color: white;
+    border: 1px solid #6c5ce7;
+}
+
+
+.filter-container {
+  display: flex; /* 가로 정렬 */
+  align-items: center; /* 세로 중앙 정렬 */
+  gap: 20px; /* 요소 간의 기본 간격 */
+  margin-bottom: 10px; /* 테이블과의 여백 */
+}
+
+.date-filter {
+  margin-right: 20px; /* 입사일자와 오른쪽 요소 사이의 간격 */
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 200px;
+  margin-left: auto; /* 검색창을 오른쪽 끝으로 정렬 */
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  box-sizing: border-box;
+}
