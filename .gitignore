@@ -1,0 +1,25 @@
+# Build output
+/target/
+*.class
+*.war
+
+# Local tokens/credentials
+/tokens/
+src/main/webapp/WEB-INF/oauth/credentials.json
+src/main/resources/kr/or/ddit/db/DBInfo.properties
+
+# IDE / tooling
+/.idea/
+/.settings/
+/.springBeans/
+/.classpath
+/.project
+*.iml
+
+# SCM metadata from other tools
+/.svn/
+
+# OS noise
+**/.DS_Store
+*.log
+*.tmp
